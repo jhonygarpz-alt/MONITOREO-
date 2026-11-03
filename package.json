@@ -1,0 +1,14 @@
+{
+  "name": "centro-inteligente-de-monitoreo",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Centro Inteligente de Monitoreo — Control Operativo y Seguridad Patrimonial",
+  "scripts": {
+    "install:all": "npm ci --prefix apps/api && npm ci --prefix apps/web",
+    "dev:api": "npm run dev --prefix apps/api",
+    "dev:web": "npm run dev --prefix apps/web",
+    "build": "npm run build --prefix apps/api && npm run build --prefix apps/web",
+    "test": "npm test --prefix apps/api",
+    "typecheck": "npm run typecheck --prefix apps/api && npm run typecheck --prefix apps/web"
+  }
+}

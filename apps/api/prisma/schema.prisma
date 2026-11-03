@@ -1,0 +1,1593 @@
+// =====================================================================
+// CENTRO INTELIGENTE DE MONITOREO — Modelo relacional PostgreSQL
+// Todas las fechas se almacenan como TIMESTAMPTZ (UTC) y se presentan
+// en la zona horaria configurada (setting: system.timezone).
+// =====================================================================
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// ---------------------------------------------------------------------
+// ENUMS
+// ---------------------------------------------------------------------
+
+/// Origen del dato: nunca se presenta un dato DEMO o MANUAL como "en vivo".
+enum DataSource {
+  MANUAL
+  DEMO
+  INTEGRATION
+}
+
+enum UnitType {
+  TRACTOCAMION
+  AUTOTANQUE
+  REMOLQUE
+  TANQUE
+  DOLLY
+}
+
+enum UnitOpStatus {
+  EN_TRANSITO
+  DETENIDA
+  RESGUARDADA
+  EN_PATIO
+  EN_PENSION
+  MANTENIMIENTO
+  FUERA_DE_SERVICIO
+}
+
+enum OperatorStatus {
+  ACTIVO
+  DESCANSO
+  VACACIONES
+  INCAPACIDAD
+  BAJA
+}
+
+enum CameraStatus {
+  FUNCIONANDO
+  SIN_TRANSMISION
+  DESCONECTADA
+  OBSTRUIDA
+  IMAGEN_DEFICIENTE
+  FALLA_TECNICA
+  PENDIENTE_VALIDACION
+}
+
+enum CameraFaultStatus {
+  ABIERTA
+  OPERADOR_NOTIFICADO
+  REVISION_SOLICITADA
+  EN_SEGUIMIENTO
+  ESCALADA
+  RECUPERADA
+}
+
+enum SweepCycleStatus {
+  PROGRAMADO
+  EN_CURSO
+  COMPLETADO
+  VENCIDO
+  INCOMPLETO
+}
+
+enum SweepReviewStatus {
+  PENDIENTE
+  EN_REVISION
+  VERIFICADA
+  CON_ANOMALIA
+  NO_VERIFICABLE
+}
+
+enum VerificationState {
+  VERIFICADO
+  NO_VERIFICADO
+  CON_ANOMALIA
+  NO_APLICA
+}
+
+enum MovementState {
+  EN_MOVIMIENTO
+  DETENIDA
+  APAGADA
+  DESCONOCIDO
+}
+
+enum StopReason {
+  DESCANSO_OBLIGATORIO
+  FATIGA
+  EMERGENCIA
+  FALLA_MECANICA
+  CONDICION_INSEGURA
+  CARGA
+  DESCARGA
+  ESPERA_CLIENTE
+  TRAFICO
+  INSPECCION_AUTORIDAD
+  ALIMENTOS
+  COMBUSTIBLE
+  NO_AUTORIZADA
+  DESCONOCIDO
+}
+
+enum StopStatus {
+  ACTIVA
+  FINALIZADA
+}
+
+enum OperationType {
+  TRANSITO
+  CARGA
+  DESCARGA
+  RESGUARDO
+  PATIO
+  MANTENIMIENTO
+}
+
+enum AlertType {
+  PERDIDA_GPS
+  POSIBLE_INTERFERENCIA
+  DESCONEXION_BATERIA
+  PARADA_SOSPECHOSA
+  DESVIACION_RUTA
+  EXCESO_VELOCIDAD
+  POSIBLE_ROBO
+  ACCIDENTE
+  FUGA
+  DERRAME
+  INCENDIO
+  EMERGENCIA_OPERADOR
+  FALLO_CAMARAS
+  INCUMPLIMIENTO_OPERATIVO
+  TIEMPO_MUERTO
+  BARRIDO_VENCIDO
+  RESTRICCION_HORARIA
+  INCUMPLIMIENTO_RESGUARDO
+  DOCUMENTO_POR_VENCER
+  ENTREGA_TURNO_PENDIENTE
+  POSICION_DESACTUALIZADA
+}
+
+enum Severity {
+  BAJA
+  MEDIA
+  ALTA
+  CRITICA
+}
+
+enum AlertStatus {
+  NUEVA
+  EN_ATENCION
+  ESCALADA
+  CONVERTIDA_INCIDENCIA
+  DESCARTADA
+  RESUELTA
+}
+
+enum IncidentStatus {
+  ABIERTA
+  EN_ATENCION
+  ESCALADA
+  CONTENIDA
+  PENDIENTE_CIERRE
+  CERRADA
+}
+
+enum EscalationLevel {
+  MONITORISTA
+  GERENCIA
+  OPERACIONES_ESTRATEGICAS
+}
+
+enum CommChannel {
+  LLAMADA_OPERADOR
+  EMERGENCIAS_911
+  GUARDIA_NACIONAL
+  AUTORIDAD_ESTATAL
+  AUTORIDAD_MUNICIPAL
+  PROTECCION_CIVIL
+  ASEGURADORA
+  ANRPV
+  PROVEEDOR_GPS
+  GERENCIA
+  OPERACIONES_ESTRATEGICAS
+  CLIENTE
+  OTRO
+}
+
+enum CommType {
+  LLAMADA_EMERGENCIA
+  DENUNCIA_FORMAL
+  RECLAMACION_SEGURO
+  SOLICITUD_APOYO
+  NOTIFICACION
+  SEGUIMIENTO
+}
+
+/// Una comunicación NUNCA se marca como confirmada sin evidencia (folio o confirmación explícita).
+enum CommResult {
+  CONFIRMADA
+  SIN_RESPUESTA
+  FALLIDA
+  PENDIENTE_CONFIRMACION
+  OCUPADO
+}
+
+enum ContactStatus {
+  SIN_VERIFICAR
+  VERIFICADO
+  VENCIDO
+  INACTIVO
+}
+
+enum ImmobilizationStatus {
+  SOLICITADA
+  PRIMERA_AUTORIZACION
+  AUTORIZADA
+  RECHAZADA
+  EJECUCION_REGISTRADA
+  RESTABLECIDA
+  CANCELADA
+}
+
+enum AuthorizationDecision {
+  APROBADA
+  RECHAZADA
+}
+
+enum RiskLevel {
+  BAJO
+  MEDIO
+  ALTO
+  MUY_ALTO
+}
+
+enum RiskCategory {
+  RIESGO_DOCUMENTADO
+  INCIDENTE_INTERNO
+  RESTRICCION_PREVENTIVA
+}
+
+enum RiskFeatureKind {
+  TRAMO_ALTO_RIESGO
+  ZONA_INCIDENCIAS
+  PARADA_PERMITIDA
+  PARADA_RESTRINGIDA
+  RUTA_ALTERNA
+}
+
+enum ValidationStatus {
+  PENDIENTE
+  VALIDADO
+  RECHAZADO
+  VENCIDO
+}
+
+enum TripStatus {
+  PROGRAMADO
+  EN_TRASLADO_A_CARGA
+  EN_CARGA
+  CARGADO
+  EN_TRANSITO
+  EN_RESGUARDO
+  EN_DESCARGA
+  DESCARGADO
+  FINALIZADO
+  CON_INCIDENCIA
+  CANCELADO
+}
+
+enum CommuniqueType {
+  AVISO_PREVENTIVO
+  REGLA_SEGURIDAD
+  HORARIO_CIRCULACION
+  RECORDATORIO
+  INSTRUCCION_OPERATIVA
+  CAMPANA_SEGURIDAD
+  CAMBIO_PROCEDIMIENTO
+}
+
+enum CommuniqueStatus {
+  BORRADOR
+  PENDIENTE_APROBACION
+  APROBADO
+  RECHAZADO
+  PUBLICADO
+}
+
+enum HandoverStatus {
+  PENDIENTE_CONFIRMACION
+  CONFIRMADA
+  CON_OBSERVACIONES
+  ESCALADA_SUPERVISION
+}
+
+enum TaskStatus {
+  ABIERTA
+  EN_PROCESO
+  COMPLETADA
+  CANCELADA
+}
+
+enum TrainingStatus {
+  PROGRAMADA
+  REALIZADA
+  CANCELADA
+  REPROGRAMADA
+}
+
+enum AgreementStatus {
+  ABIERTO
+  EN_PROCESO
+  CUMPLIDO
+  VENCIDO
+  CANCELADO
+}
+
+enum ChangeRequestStatus {
+  PENDIENTE
+  APROBADA
+  RECHAZADA
+  APLICADA
+}
+
+enum JobStatus {
+  EJECUTANDO
+  EXITOSO
+  FALLIDO
+}
+
+enum DocumentCategory {
+  FOTOGRAFIA
+  TARJETA_CIRCULACION
+  POLIZA
+  PERMISO_SCT
+  VERIFICACION
+  EVIDENCIA
+  LICENCIA
+  HOJA_SEGURIDAD
+  OTRO
+}
+
+// ---------------------------------------------------------------------
+// SEGURIDAD: USUARIOS, ROLES, PERMISOS
+// ---------------------------------------------------------------------
+
+model User {
+  id            String    @id @default(uuid()) @db.Uuid
+  email         String    @unique
+  fullName      String
+  employeeNo    String?   @unique
+  phone         String?
+  passwordHash  String
+  active        Boolean   @default(true)
+  mustChangePwd Boolean   @default(false)
+  tokenVersion  Int       @default(0)
+  failedLogins  Int       @default(0)
+  lockedUntil   DateTime? @db.Timestamptz(6)
+  lastLoginAt   DateTime? @db.Timestamptz(6)
+  createdAt     DateTime  @default(now()) @db.Timestamptz(6)
+  updatedAt     DateTime  @updatedAt @db.Timestamptz(6)
+
+  roles               UserRole[]
+  notifications       Notification[]
+  sweepReviews        SweepReview[]           @relation("ReviewedBy")
+  lockedReviews       SweepReview[]           @relation("LockedBy")
+  handoversOut        ShiftHandover[]         @relation("Outgoing")
+  handoversIn         ShiftHandover[]         @relation("Incoming")
+  incidentsOwned      Incident[]              @relation("IncidentResponsible")
+  tasksAssigned       Task[]                  @relation("TaskAssignee")
+  tasksCreated        Task[]                  @relation("TaskCreator")
+  immobRequests       ImmobilizationRequest[] @relation("ImmobRequester")
+  immobExecutions     ImmobilizationRequest[] @relation("ImmobExecutor")
+  authorizations      Authorization[]
+  attendances         TrainingAttendance[]
+  agreements          Agreement[]
+  escalationPrimary   EscalationMatrixEntry[] @relation("EscPrimary")
+  escalationSubstitute EscalationMatrixEntry[] @relation("EscSubstitute")
+
+  @@map("users")
+}
+
+model Role {
+  id          String           @id @default(uuid()) @db.Uuid
+  key         String           @unique
+  name        String
+  description String?
+  system      Boolean          @default(false)
+  permissions RolePermission[]
+  users       UserRole[]
+
+  @@map("roles")
+}
+
+model Permission {
+  id          String           @id @default(uuid()) @db.Uuid
+  key         String           @unique
+  module      String
+  description String
+  critical    Boolean          @default(false)
+  roles       RolePermission[]
+
+  @@map("permissions")
+}
+
+model RolePermission {
+  roleId       String     @db.Uuid
+  permissionId String     @db.Uuid
+  role         Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@id([roleId, permissionId])
+  @@map("role_permissions")
+}
+
+model UserRole {
+  userId String @db.Uuid
+  roleId String @db.Uuid
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role   Role   @relation(fields: [roleId], references: [id], onDelete: Restrict)
+
+  @@id([userId, roleId])
+  @@map("user_roles")
+}
+
+// ---------------------------------------------------------------------
+// TURNOS
+// ---------------------------------------------------------------------
+
+model ShiftDefinition {
+  id        String          @id @default(uuid()) @db.Uuid
+  name      String          @unique
+  /// Hora local "HH:mm" en la zona horaria del sistema
+  startTime String
+  endTime   String
+  active    Boolean         @default(true)
+  handovers ShiftHandover[]
+
+  @@map("shift_definitions")
+}
+
+model ShiftHandover {
+  id               String          @id @default(uuid()) @db.Uuid
+  shiftId          String?         @db.Uuid
+  shift            ShiftDefinition? @relation(fields: [shiftId], references: [id])
+  outgoingUserId   String          @db.Uuid
+  outgoingUser     User            @relation("Outgoing", fields: [outgoingUserId], references: [id])
+  incomingUserId   String?         @db.Uuid
+  incomingUser     User?           @relation("Incoming", fields: [incomingUserId], references: [id])
+  createdAt        DateTime        @default(now()) @db.Timestamptz(6)
+  /// Fotografía del estado operativo al momento de la entrega (generada en servidor)
+  snapshot         Json
+  priorities       String?
+  instructions     String?
+  notes            String?
+  status           HandoverStatus  @default(PENDIENTE_CONFIRMACION)
+  acknowledgedAt   DateTime?       @db.Timestamptz(6)
+  receiverComments String?
+  escalatedAt      DateTime?       @db.Timestamptz(6)
+
+  @@index([status, createdAt])
+  @@map("shift_handovers")
+}
+
+// ---------------------------------------------------------------------
+// CATÁLOGOS OPERATIVOS
+// ---------------------------------------------------------------------
+
+model Base {
+  id        String     @id @default(uuid()) @db.Uuid
+  code      String     @unique
+  name      String
+  city      String
+  state     String
+  lat       Float?
+  lng       Float?
+  active    Boolean    @default(true)
+  units     Unit[]
+  operators Operator[]
+
+  @@map("bases")
+}
+
+model Unit {
+  id              String       @id @default(uuid()) @db.Uuid
+  economicNumber  String       @unique
+  plates          String       @unique
+  brand           String?
+  model           String?
+  year            Int?
+  vin             String?      @unique
+  type            UnitType
+  baseId          String?      @db.Uuid
+  base            Base?        @relation(fields: [baseId], references: [id])
+  opStatus        UnitOpStatus @default(EN_PATIO)
+  /// Sujeta a la política de resguardo nocturno (se calcula por ruta, este campo permite forzarlo)
+  nightRuleOverride Boolean?
+  capacityLiters  Int?
+  notes           String?
+  active          Boolean      @default(true)
+  dataSource      DataSource   @default(MANUAL)
+  createdAt       DateTime     @default(now()) @db.Timestamptz(6)
+  updatedAt       DateTime     @updatedAt @db.Timestamptz(6)
+
+  devices          GpsDevice[]
+  cameras          Camera[]
+  positions        GpsPosition[]
+  policies         InsurancePolicy[]
+  assignments      OperatorAssignment[]
+  couplingsAsMotor UnitCoupling[]        @relation("Motor")
+  couplingsAsTrailer UnitCoupling[]      @relation("Trailer")
+  sweepReviews     SweepReview[]
+  stops            Stop[]
+  alerts           Alert[]
+  incidents        Incident[]
+  trips            Trip[]
+  havenArrivals    HavenArrival[]
+  immobRequests    ImmobilizationRequest[]
+  curfewExceptions CurfewException[]
+
+  @@index([opStatus])
+  @@index([type])
+  @@map("units")
+}
+
+/// Relación motriz ↔ remolques/tanques con vigencia (configuración real del servicio)
+model UnitCoupling {
+  id         String    @id @default(uuid()) @db.Uuid
+  motorId    String    @db.Uuid
+  trailerId  String    @db.Uuid
+  position   Int       @default(1)
+  coupledAt  DateTime  @default(now()) @db.Timestamptz(6)
+  uncoupledAt DateTime? @db.Timestamptz(6)
+  motor      Unit      @relation("Motor", fields: [motorId], references: [id])
+  trailer    Unit      @relation("Trailer", fields: [trailerId], references: [id])
+
+  @@index([motorId, uncoupledAt])
+  @@index([trailerId, uncoupledAt])
+  @@map("unit_couplings")
+}
+
+model Operator {
+  id               String         @id @default(uuid()) @db.Uuid
+  employeeNo       String         @unique
+  fullName         String
+  phonePrimary     String?
+  phoneAlt         String?
+  /// Datos restringidos: solo visibles con permiso operators.sensitive
+  emergencyContactName  String?
+  emergencyContactPhone String?
+  emergencyContactRelation String?
+  status           OperatorStatus @default(ACTIVO)
+  baseId           String?        @db.Uuid
+  base             Base?          @relation(fields: [baseId], references: [id])
+  authorizedNotes  String?
+  licenseNumber    String?
+  licenseExpiresAt DateTime?      @db.Timestamptz(6)
+  dataSource       DataSource     @default(MANUAL)
+  createdAt        DateTime       @default(now()) @db.Timestamptz(6)
+  updatedAt        DateTime       @updatedAt @db.Timestamptz(6)
+  assignments      OperatorAssignment[]
+  trips            Trip[]
+  incidents        Incident[]
+
+  @@index([fullName])
+  @@map("operators")
+}
+
+model OperatorAssignment {
+  id         String    @id @default(uuid()) @db.Uuid
+  operatorId String    @db.Uuid
+  unitId     String    @db.Uuid
+  startAt    DateTime  @default(now()) @db.Timestamptz(6)
+  endAt      DateTime? @db.Timestamptz(6)
+  assignedBy String?   @db.Uuid
+  operator   Operator  @relation(fields: [operatorId], references: [id])
+  unit       Unit      @relation(fields: [unitId], references: [id])
+
+  @@index([unitId, endAt])
+  @@index([operatorId, endAt])
+  @@map("operator_assignments")
+}
+
+model Client {
+  id                  String  @id @default(uuid()) @db.Uuid
+  name                String  @unique
+  contactName         String?
+  contactEmail        String?
+  contactPhone        String?
+  /// El cliente está autorizado a ver el nombre del operador en comandas
+  canSeeOperator      Boolean @default(false)
+  /// El cliente está autorizado a ver ubicación aproximada (nunca coordenadas exactas en tiempo real)
+  canSeeApproxLocation Boolean @default(false)
+  active              Boolean @default(true)
+  trips               Trip[]
+
+  @@map("clients")
+}
+
+model Corridor {
+  id          String   @id @default(uuid()) @db.Uuid
+  code        String   @unique
+  name        String
+  description String?
+  routes      Route[]
+  rules       CirculationRule[]
+  havens      SafeHaven[]
+  features    RiskFeature[]
+
+  @@map("corridors")
+}
+
+model Route {
+  id           String    @id @default(uuid()) @db.Uuid
+  code         String    @unique
+  name         String
+  origin       String
+  destination  String
+  corridorId   String?   @db.Uuid
+  corridor     Corridor? @relation(fields: [corridorId], references: [id])
+  /// Ruta foránea más allá de Monterrey: sujeta a la regla de resguardo nocturno
+  beyondMonterrey Boolean @default(false)
+  distanceKm   Int?
+  expectedHours Float?
+  /// Polilínea GeoJSON LineString (opcional)
+  geometry     Json?
+  active       Boolean   @default(true)
+  trips        Trip[]
+  rules        CirculationRule[]
+
+  @@map("routes")
+}
+
+model Trip {
+  id           String     @id @default(uuid()) @db.Uuid
+  tripNumber   String     @unique
+  clientId     String     @db.Uuid
+  client       Client     @relation(fields: [clientId], references: [id])
+  routeId      String?    @db.Uuid
+  route        Route?     @relation(fields: [routeId], references: [id])
+  unitId       String     @db.Uuid
+  unit         Unit       @relation(fields: [unitId], references: [id])
+  operatorId   String?    @db.Uuid
+  operator     Operator?  @relation(fields: [operatorId], references: [id])
+  /// Identificación de tanques/remolques del viaje (texto libre normalizado o economicos)
+  trailerIds   String[]
+  product      String?
+  /// Número ONU del producto (información de emergencia)
+  unNumber     String?
+  volumeLiters Int?
+  origin       String
+  destination  String
+  status       TripStatus @default(PROGRAMADO)
+  scheduledStart DateTime? @db.Timestamptz(6)
+  startedAt    DateTime?  @db.Timestamptz(6)
+  eta          DateTime?  @db.Timestamptz(6)
+  etaSource    String?
+  finishedAt   DateTime?  @db.Timestamptz(6)
+  observations String?
+  createdAt    DateTime   @default(now()) @db.Timestamptz(6)
+  updatedAt    DateTime   @updatedAt @db.Timestamptz(6)
+  statusReports StatusReport[]
+  incidents    Incident[]
+  stops        Stop[]
+  havenArrivals HavenArrival[]
+  curfewExceptions CurfewException[]
+
+  @@index([status])
+  @@index([unitId, status])
+  @@map("trips")
+}
+
+// ---------------------------------------------------------------------
+// GPS, DISPOSITIVOS Y CÁMARAS
+// ---------------------------------------------------------------------
+
+model GpsDevice {
+  id              String    @id @default(uuid()) @db.Uuid
+  unitId          String    @db.Uuid
+  unit            Unit      @relation(fields: [unitId], references: [id])
+  provider        String
+  identifier      String
+  model           String?
+  /// El equipo cuenta con función de inmovilización (dato del fabricante)
+  supportsImmobilizer Boolean @default(false)
+  /// La integración de inmovilización fue validada (fabricante, legal, seguridad). Mientras sea false, NO se envían comandos.
+  immobilizerIntegrationValidated Boolean @default(false)
+  active          Boolean   @default(true)
+  installedAt     DateTime? @db.Timestamptz(6)
+
+  @@unique([provider, identifier])
+  @@map("gps_devices")
+}
+
+model GpsPosition {
+  id         String     @id @default(uuid()) @db.Uuid
+  unitId     String     @db.Uuid
+  unit       Unit       @relation(fields: [unitId], references: [id])
+  lat        Float
+  lng        Float
+  speedKph   Float?
+  heading    Float?
+  ignition   Boolean?
+  address    String?
+  recordedAt DateTime   @db.Timestamptz(6)
+  receivedAt DateTime   @default(now()) @db.Timestamptz(6)
+  source     DataSource
+  capturedBy String?    @db.Uuid
+
+  @@unique([unitId, recordedAt, source])
+  @@index([unitId, recordedAt(sort: Desc)])
+  @@map("gps_positions")
+}
+
+model Camera {
+  id         String       @id @default(uuid()) @db.Uuid
+  unitId     String       @db.Uuid
+  unit       Unit         @relation(fields: [unitId], references: [id])
+  label      String
+  channel    Int?
+  status     CameraStatus @default(PENDIENTE_VALIDACION)
+  statusAt   DateTime     @default(now()) @db.Timestamptz(6)
+  active     Boolean      @default(true)
+  checks     CameraCheck[]
+  faults     CameraFault[]
+
+  @@unique([unitId, label])
+  @@map("cameras")
+}
+
+model CameraCheck {
+  id            String       @id @default(uuid()) @db.Uuid
+  cameraId      String       @db.Uuid
+  camera        Camera       @relation(fields: [cameraId], references: [id])
+  sweepReviewId String?      @db.Uuid
+  sweepReview   SweepReview? @relation(fields: [sweepReviewId], references: [id])
+  status        CameraStatus
+  /// true solo si el monitorista vio efectivamente la imagen
+  imageViewed   Boolean
+  notes         String?
+  checkedById   String       @db.Uuid
+  checkedAt     DateTime     @default(now()) @db.Timestamptz(6)
+
+  @@index([cameraId, checkedAt(sort: Desc)])
+  @@map("camera_checks")
+}
+
+model CameraFault {
+  id                     String            @id @default(uuid()) @db.Uuid
+  cameraId               String            @db.Uuid
+  camera                 Camera            @relation(fields: [cameraId], references: [id])
+  faultStatus            CameraStatus
+  status                 CameraFaultStatus @default(ABIERTA)
+  openedAt               DateTime          @default(now()) @db.Timestamptz(6)
+  openedById             String            @db.Uuid
+  operatorNotifiedAt     DateTime?         @db.Timestamptz(6)
+  reviewRequestedAt      DateTime?         @db.Timestamptz(6)
+  /// La revisión física solo se solicita con la unidad detenida
+  vehicleStoppedConfirmed Boolean          @default(false)
+  escalatedAt            DateTime?         @db.Timestamptz(6)
+  recoveredAt            DateTime?         @db.Timestamptz(6)
+  recoveryConfirmedById  String?           @db.Uuid
+  actions                CameraFaultAction[]
+
+  @@index([status])
+  @@index([cameraId, openedAt])
+  @@map("camera_faults")
+}
+
+model CameraFaultAction {
+  id        String      @id @default(uuid()) @db.Uuid
+  faultId   String      @db.Uuid
+  fault     CameraFault @relation(fields: [faultId], references: [id])
+  action    String
+  notes     String?
+  actorId   String      @db.Uuid
+  at        DateTime    @default(now()) @db.Timestamptz(6)
+
+  @@map("camera_fault_actions")
+}
+
+// ---------------------------------------------------------------------
+// BARRIDOS DE FLOTA
+// ---------------------------------------------------------------------
+
+model SweepCycle {
+  id          String           @id @default(uuid()) @db.Uuid
+  /// Clave idempotente: inicio del ciclo en ISO, evita ciclos duplicados
+  cycleKey    String           @unique
+  startsAt    DateTime         @db.Timestamptz(6)
+  dueAt       DateTime         @db.Timestamptz(6)
+  status      SweepCycleStatus @default(PROGRAMADO)
+  totalUnits  Int              @default(0)
+  closedAt    DateTime?        @db.Timestamptz(6)
+  createdAt   DateTime         @default(now()) @db.Timestamptz(6)
+  reviews     SweepReview[]
+
+  @@index([status, dueAt])
+  @@map("sweep_cycles")
+}
+
+model SweepReview {
+  id              String            @id @default(uuid()) @db.Uuid
+  cycleId         String            @db.Uuid
+  cycle           SweepCycle        @relation(fields: [cycleId], references: [id])
+  unitId          String            @db.Uuid
+  unit            Unit              @relation(fields: [unitId], references: [id])
+  status          SweepReviewStatus @default(PENDIENTE)
+  /// Control de concurrencia: bloqueo temporal y versión optimista
+  lockedById      String?           @db.Uuid
+  lockedBy        User?             @relation("LockedBy", fields: [lockedById], references: [id])
+  lockedAt        DateTime?         @db.Timestamptz(6)
+  version         Int               @default(0)
+
+  // Evidencia capturada (snapshot al momento de revisar)
+  unitOpStatusSnapshot UnitOpStatus?
+  operatorName    String?
+  lastPositionLat Float?
+  lastPositionLng Float?
+  lastPositionAt  DateTime?         @db.Timestamptz(6)
+  lastPositionSource DataSource?
+  locationVerified VerificationState @default(NO_VERIFICADO)
+  gpsStatus       VerificationState @default(NO_VERIFICADO)
+  camerasStatus   VerificationState @default(NO_VERIFICADO)
+  movementState   MovementState     @default(DESCONOCIDO)
+  stoppedMinutes  Int?
+  stopReason      StopReason?
+  observations    String?
+  incidentsNoted  String?
+  reviewedById    String?           @db.Uuid
+  reviewedBy      User?             @relation("ReviewedBy", fields: [reviewedById], references: [id])
+  reviewedAt      DateTime?         @db.Timestamptz(6)
+  cameraChecks    CameraCheck[]
+
+  @@unique([cycleId, unitId])
+  @@index([cycleId, status])
+  @@map("sweep_reviews")
+}
+
+// ---------------------------------------------------------------------
+// CONTROL OPERATIVO: PARADAS Y TIEMPOS MUERTOS
+// ---------------------------------------------------------------------
+
+model DeadTimeThreshold {
+  id            String        @id @default(uuid()) @db.Uuid
+  operationType OperationType @unique
+  warnMinutes   Int
+  maxMinutes    Int
+  escalateMinutes Int
+  updatedAt     DateTime      @updatedAt @db.Timestamptz(6)
+
+  @@map("dead_time_thresholds")
+}
+
+model Stop {
+  id            String        @id @default(uuid()) @db.Uuid
+  unitId        String        @db.Uuid
+  unit          Unit          @relation(fields: [unitId], references: [id])
+  tripId        String?       @db.Uuid
+  trip          Trip?         @relation(fields: [tripId], references: [id])
+  operationType OperationType @default(TRANSITO)
+  startedAt     DateTime      @db.Timestamptz(6)
+  endedAt       DateTime?     @db.Timestamptz(6)
+  lat           Float?
+  lng           Float?
+  locationText  String?
+  reason        StopReason    @default(DESCONOCIDO)
+  authorized    Boolean       @default(false)
+  status        StopStatus    @default(ACTIVA)
+  source        DataSource    @default(MANUAL)
+  createdById   String?       @db.Uuid
+  followUps     StopFollowUp[]
+  reminders     OperatorReminder[]
+
+  @@index([status, startedAt])
+  @@index([unitId, status])
+  @@map("stops")
+}
+
+model StopFollowUp {
+  id      String   @id @default(uuid()) @db.Uuid
+  stopId  String   @db.Uuid
+  stop    Stop     @relation(fields: [stopId], references: [id])
+  notes   String
+  actorId String   @db.Uuid
+  at      DateTime @default(now()) @db.Timestamptz(6)
+
+  @@map("stop_follow_ups")
+}
+
+model OperatorReminder {
+  id        String   @id @default(uuid()) @db.Uuid
+  stopId    String   @db.Uuid
+  stop      Stop     @relation(fields: [stopId], references: [id])
+  channel   String
+  message   String
+  /// Solo se registra como enviado con confirmación del canal/operador
+  confirmed Boolean  @default(false)
+  sentById  String   @db.Uuid
+  at        DateTime @default(now()) @db.Timestamptz(6)
+
+  @@map("operator_reminders")
+}
+
+// ---------------------------------------------------------------------
+// SEGURIDAD EN RUTA, RESGUARDO, ZONAS DE RIESGO
+// ---------------------------------------------------------------------
+
+model CirculationRule {
+  id             String    @id @default(uuid()) @db.Uuid
+  name           String
+  corridorId     String?   @db.Uuid
+  corridor       Corridor? @relation(fields: [corridorId], references: [id])
+  routeId        String?   @db.Uuid
+  route          Route?    @relation(fields: [routeId], references: [id])
+  /// Aplica a rutas foráneas que van más allá de Monterrey
+  appliesBeyondMonterrey Boolean @default(false)
+  /// Hora local límite "HH:mm" (p.ej. 22:00) y reanudación (p.ej. 06:00)
+  curfewStart    String
+  curfewEnd      String
+  warnMinutesBefore Int    @default(90)
+  riskAssessmentRef String?
+  active         Boolean   @default(true)
+  version        Int       @default(1)
+  createdAt      DateTime  @default(now()) @db.Timestamptz(6)
+  updatedAt      DateTime  @updatedAt @db.Timestamptz(6)
+
+  @@map("circulation_rules")
+}
+
+model SafeHaven {
+  id          String           @id @default(uuid()) @db.Uuid
+  name        String
+  state       String
+  municipality String?
+  highway     String?
+  kmMarker    String?
+  lat         Float
+  lng         Float
+  corridorId  String?          @db.Uuid
+  corridor    Corridor?        @relation(fields: [corridorId], references: [id])
+  capacity    Int?
+  hours       String?
+  contactPhone String?
+  source      String
+  validation  ValidationStatus @default(PENDIENTE)
+  validatedById String?        @db.Uuid
+  validatedAt DateTime?        @db.Timestamptz(6)
+  active      Boolean          @default(true)
+  arrivals    HavenArrival[]
+
+  @@map("safe_havens")
+}
+
+model HavenArrival {
+  id         String    @id @default(uuid()) @db.Uuid
+  unitId     String    @db.Uuid
+  unit       Unit      @relation(fields: [unitId], references: [id])
+  tripId     String?   @db.Uuid
+  trip       Trip?     @relation(fields: [tripId], references: [id])
+  havenId    String    @db.Uuid
+  haven      SafeHaven @relation(fields: [havenId], references: [id])
+  arrivedAt  DateTime  @db.Timestamptz(6)
+  departedAt DateTime? @db.Timestamptz(6)
+  /// Cómo se verificó la llegada (GPS, cámara, llamada, foto)
+  evidence   String
+  recordedById String  @db.Uuid
+  createdAt  DateTime  @default(now()) @db.Timestamptz(6)
+
+  @@index([unitId, arrivedAt])
+  @@map("haven_arrivals")
+}
+
+model CurfewException {
+  id             String    @id @default(uuid()) @db.Uuid
+  unitId         String    @db.Uuid
+  unit           Unit      @relation(fields: [unitId], references: [id])
+  tripId         String?   @db.Uuid
+  trip           Trip?     @relation(fields: [tripId], references: [id])
+  reason         String
+  riskAssessment String
+  validFrom      DateTime  @db.Timestamptz(6)
+  validUntil     DateTime  @db.Timestamptz(6)
+  requestedById  String    @db.Uuid
+  approvedById   String?   @db.Uuid
+  approvedAt     DateTime? @db.Timestamptz(6)
+  status         ChangeRequestStatus @default(PENDIENTE)
+
+  @@index([unitId, validUntil])
+  @@map("curfew_exceptions")
+}
+
+model RiskFeature {
+  id                String           @id @default(uuid()) @db.Uuid
+  kind              RiskFeatureKind
+  category          RiskCategory
+  name              String
+  state             String
+  highway           String?
+  corridorId        String?          @db.Uuid
+  corridor          Corridor?        @relation(fields: [corridorId], references: [id])
+  /// GeoJSON (Point/LineString/Polygon)
+  geometry          Json
+  level             RiskLevel
+  reason            String
+  source            String
+  sourceDate        DateTime?        @db.Timestamptz(6)
+  preventiveMeasures String?
+  /// Horario de circulación establecido por la empresa para el tramo (texto)
+  circulationHours  String?
+  validation        ValidationStatus @default(PENDIENTE)
+  validatedById     String?          @db.Uuid
+  validatedAt       DateTime?        @db.Timestamptz(6)
+  importBatch       String?
+  createdAt         DateTime         @default(now()) @db.Timestamptz(6)
+  updatedAt         DateTime         @updatedAt @db.Timestamptz(6)
+
+  @@index([kind, validation])
+  @@map("risk_features")
+}
+
+// ---------------------------------------------------------------------
+// ALERTAS E INCIDENCIAS
+// ---------------------------------------------------------------------
+
+model Alert {
+  id          String      @id @default(uuid()) @db.Uuid
+  type        AlertType
+  severity    Severity
+  status      AlertStatus @default(NUEVA)
+  title       String
+  description String?
+  unitId      String?     @db.Uuid
+  unit        Unit?       @relation(fields: [unitId], references: [id])
+  /// Clave de deduplicación: evita alertas duplicadas por el motor de reglas
+  dedupKey    String?     @unique
+  source      DataSource  @default(MANUAL)
+  /// Momento en que ocurrió la condición (si se conoce); permite medir tiempo de detección
+  occurredAt  DateTime?   @db.Timestamptz(6)
+  detectedAt  DateTime    @default(now()) @db.Timestamptz(6)
+  firstResponseAt DateTime? @db.Timestamptz(6)
+  acknowledgedById String? @db.Uuid
+  escalatedAt DateTime?   @db.Timestamptz(6)
+  resolvedAt  DateTime?   @db.Timestamptz(6)
+  resolution  String?
+  incidentId  String?     @db.Uuid
+  incident    Incident?   @relation(fields: [incidentId], references: [id])
+  lat         Float?
+  lng         Float?
+  escalations Escalation[]
+
+  @@index([status, severity])
+  @@index([detectedAt])
+  @@map("alerts")
+}
+
+model Incident {
+  id              String         @id @default(uuid()) @db.Uuid
+  folio           String         @unique
+  type            AlertType
+  priority        Severity
+  status          IncidentStatus @default(ABIERTA)
+  title           String
+  description     String?
+  unitId          String?        @db.Uuid
+  unit            Unit?          @relation(fields: [unitId], references: [id])
+  operatorId      String?        @db.Uuid
+  operator        Operator?      @relation(fields: [operatorId], references: [id])
+  tripId          String?        @db.Uuid
+  trip            Trip?          @relation(fields: [tripId], references: [id])
+  lastKnownLat    Float?
+  lastKnownLng    Float?
+  lastKnownAt     DateTime?      @db.Timestamptz(6)
+  lastKnownSource DataSource?
+  responsibleId   String         @db.Uuid
+  responsible     User           @relation("IncidentResponsible", fields: [responsibleId], references: [id])
+  currentLevel    EscalationLevel @default(MONITORISTA)
+  openedAt        DateTime       @default(now()) @db.Timestamptz(6)
+  firstResponseAt DateTime?      @db.Timestamptz(6)
+  result          String?
+  closureJustification String?
+  closureRequestedById String?   @db.Uuid
+  closureApprovedById  String?   @db.Uuid
+  closedAt        DateTime?      @db.Timestamptz(6)
+  protocolKey     String?
+  protocolState   Json?
+  alerts          Alert[]
+  events          IncidentEvent[]
+  communications  IncidentCommunication[]
+  escalations     Escalation[]
+  immobRequests   ImmobilizationRequest[]
+
+  @@index([status, priority])
+  @@index([openedAt])
+  @@map("incidents")
+}
+
+/// Historial cronológico INALTERABLE (trigger en BD impide UPDATE/DELETE; hash encadenado)
+model IncidentEvent {
+  id         String   @id @default(uuid()) @db.Uuid
+  seq        Int      @default(autoincrement())
+  incidentId String   @db.Uuid
+  incident   Incident @relation(fields: [incidentId], references: [id])
+  kind       String
+  message    String
+  data       Json?
+  actorId    String?  @db.Uuid
+  actorName  String?
+  at         DateTime @default(now()) @db.Timestamptz(6)
+  prevHash   String?
+  hash       String
+
+  @@index([incidentId, seq])
+  @@map("incident_events")
+}
+
+model IncidentCommunication {
+  id           String      @id @default(uuid()) @db.Uuid
+  incidentId   String      @db.Uuid
+  incident     Incident    @relation(fields: [incidentId], references: [id])
+  channel      CommChannel
+  commType     CommType
+  contactId    String?     @db.Uuid
+  contact      EmergencyContact? @relation(fields: [contactId], references: [id])
+  numberUsed   String?
+  attemptNo    Int         @default(1)
+  folioObtained String?
+  result       CommResult
+  notes        String?
+  actorId      String      @db.Uuid
+  at           DateTime    @default(now()) @db.Timestamptz(6)
+
+  @@index([incidentId, at])
+  @@map("incident_communications")
+}
+
+model Escalation {
+  id         String          @id @default(uuid()) @db.Uuid
+  incidentId String?         @db.Uuid
+  incident   Incident?       @relation(fields: [incidentId], references: [id])
+  alertId    String?         @db.Uuid
+  alert      Alert?          @relation(fields: [alertId], references: [id])
+  fromLevel  EscalationLevel
+  toLevel    EscalationLevel
+  toUserId   String?         @db.Uuid
+  isSubstitute Boolean       @default(false)
+  reason     String
+  actorId    String?         @db.Uuid
+  automatic  Boolean         @default(false)
+  at         DateTime        @default(now()) @db.Timestamptz(6)
+  acknowledgedAt DateTime?   @db.Timestamptz(6)
+
+  @@index([incidentId])
+  @@map("escalations")
+}
+
+model EscalationMatrixEntry {
+  id            String          @id @default(uuid()) @db.Uuid
+  level         EscalationLevel
+  /// Tipo de alerta al que aplica (null = todos)
+  alertType     AlertType?
+  primaryUserId String          @db.Uuid
+  primaryUser   User            @relation("EscPrimary", fields: [primaryUserId], references: [id])
+  substituteUserId String?      @db.Uuid
+  substituteUser User?          @relation("EscSubstitute", fields: [substituteUserId], references: [id])
+  /// Minutos sin acuse antes de escalar al suplente
+  ackTimeoutMinutes Int         @default(10)
+  active        Boolean         @default(true)
+
+  @@index([level, alertType])
+  @@map("escalation_matrix")
+}
+
+// ---------------------------------------------------------------------
+// DIRECTORIO DE EMERGENCIAS
+// ---------------------------------------------------------------------
+
+model EmergencyContact {
+  id          String        @id @default(uuid()) @db.Uuid
+  category    CommChannel
+  name        String
+  phone       String
+  altPhone    String?
+  altContactName String?
+  coverage    String
+  schedule    String?
+  procedure   String?
+  status      ContactStatus @default(SIN_VERIFICAR)
+  verifiedAt  DateTime?     @db.Timestamptz(6)
+  verifiedById String?      @db.Uuid
+  verificationNotes String?
+  createdAt   DateTime      @default(now()) @db.Timestamptz(6)
+  updatedAt   DateTime      @updatedAt @db.Timestamptz(6)
+  communications IncidentCommunication[]
+
+  @@index([category, status])
+  @@map("emergency_contacts")
+}
+
+// ---------------------------------------------------------------------
+// INMOVILIZACIÓN (solo flujo de autorización y registro; sin comandos físicos)
+// ---------------------------------------------------------------------
+
+model ImmobilizationRequest {
+  id              String               @id @default(uuid()) @db.Uuid
+  folio           String               @unique
+  unitId          String               @db.Uuid
+  unit            Unit                 @relation(fields: [unitId], references: [id])
+  incidentId      String?              @db.Uuid
+  incident        Incident?            @relation(fields: [incidentId], references: [id])
+  reason          String
+  riskAssessment  String
+  /// Condiciones verificadas: vehículo detenido, velocidad 0, ubicación segura, etc.
+  conditions      Json
+  /// Velocidad y hora de la última posición usada para validar "detenido"
+  verifiedSpeedKph Float?
+  verifiedPositionAt DateTime?         @db.Timestamptz(6)
+  /// Modalidad: SOLO bloqueo de siguiente arranque
+  mode            String               @default("BLOQUEO_SIGUIENTE_ARRANQUE")
+  status          ImmobilizationStatus @default(SOLICITADA)
+  requestedById   String               @db.Uuid
+  requestedBy     User                 @relation("ImmobRequester", fields: [requestedById], references: [id])
+  requestedAt     DateTime             @default(now()) @db.Timestamptz(6)
+  executorId      String?              @db.Uuid
+  executor        User?                @relation("ImmobExecutor", fields: [executorId], references: [id])
+  executionNotes  String?
+  /// Confirmación del proveedor (folio/ticket). Sin esto no se registra como ejecutado.
+  providerConfirmation String?
+  executedAt      DateTime?            @db.Timestamptz(6)
+  restoredAt      DateTime?            @db.Timestamptz(6)
+  restorationNotes String?
+  authorizations  Authorization[]
+
+  @@index([status])
+  @@map("immobilization_requests")
+}
+
+model Authorization {
+  id         String                @id @default(uuid()) @db.Uuid
+  requestId  String                @db.Uuid
+  request    ImmobilizationRequest @relation(fields: [requestId], references: [id])
+  approverId String                @db.Uuid
+  approver   User                  @relation(fields: [approverId], references: [id])
+  decision   AuthorizationDecision
+  comment    String
+  at         DateTime              @default(now()) @db.Timestamptz(6)
+
+  @@unique([requestId, approverId])
+  @@map("authorizations")
+}
+
+// ---------------------------------------------------------------------
+// DOCUMENTOS Y PÓLIZAS
+// ---------------------------------------------------------------------
+
+model Document {
+  id          String           @id @default(uuid()) @db.Uuid
+  entityType  String
+  entityId    String           @db.Uuid
+  category    DocumentCategory
+  title       String
+  filename    String
+  mimeType    String
+  sizeBytes   Int
+  sha256      String
+  storageKey  String           @unique
+  expiresAt   DateTime?        @db.Timestamptz(6)
+  uploadedById String          @db.Uuid
+  uploadedAt  DateTime         @default(now()) @db.Timestamptz(6)
+  deletedAt   DateTime?        @db.Timestamptz(6)
+
+  @@index([entityType, entityId])
+  @@index([expiresAt])
+  @@map("documents")
+}
+
+model InsurancePolicy {
+  id           String   @id @default(uuid()) @db.Uuid
+  unitId       String   @db.Uuid
+  unit         Unit     @relation(fields: [unitId], references: [id])
+  insurer      String
+  policyNumber String
+  coverage     String?
+  validFrom    DateTime @db.Timestamptz(6)
+  validTo      DateTime @db.Timestamptz(6)
+  claimsPhone  String?
+  createdAt    DateTime @default(now()) @db.Timestamptz(6)
+
+  @@unique([insurer, policyNumber, unitId])
+  @@index([validTo])
+  @@map("insurance_policies")
+}
+
+// ---------------------------------------------------------------------
+// COMUNICACIÓN
+// ---------------------------------------------------------------------
+
+model Communique {
+  id           String           @id @default(uuid()) @db.Uuid
+  folio        String           @unique
+  type         CommuniqueType
+  templateKey  String
+  title        String
+  body         String
+  status       CommuniqueStatus @default(BORRADOR)
+  requiresApproval Boolean      @default(false)
+  createdById  String           @db.Uuid
+  createdAt    DateTime         @default(now()) @db.Timestamptz(6)
+  approvedById String?          @db.Uuid
+  approvedAt   DateTime?        @db.Timestamptz(6)
+  rejectionReason String?
+  publishedAt  DateTime?        @db.Timestamptz(6)
+  distributions CommuniqueDistribution[]
+
+  @@map("communiques")
+}
+
+model CommuniqueDistribution {
+  id           String     @id @default(uuid()) @db.Uuid
+  communiqueId String     @db.Uuid
+  communique   Communique @relation(fields: [communiqueId], references: [id])
+  channel      String
+  recipients   String
+  sharedById   String     @db.Uuid
+  at           DateTime   @default(now()) @db.Timestamptz(6)
+
+  @@map("communique_distributions")
+}
+
+model StatusReport {
+  id          String     @id @default(uuid()) @db.Uuid
+  folio       String     @unique
+  tripId      String     @db.Uuid
+  trip        Trip       @relation(fields: [tripId], references: [id])
+  /// Contenido ya filtrado según permisos del cliente (lo que realmente se compartió)
+  snapshot    Json
+  status      TripStatus
+  observations String?
+  includeOperator Boolean @default(false)
+  generatedById String   @db.Uuid
+  generatedAt DateTime   @default(now()) @db.Timestamptz(6)
+  sharedVia   String?
+  sharedTo    String?
+  sharedAt    DateTime?  @db.Timestamptz(6)
+
+  @@index([tripId, generatedAt])
+  @@map("status_reports")
+}
+
+model Notification {
+  id        String    @id @default(uuid()) @db.Uuid
+  userId    String    @db.Uuid
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      String
+  severity  Severity  @default(MEDIA)
+  title     String
+  body      String?
+  link      String?
+  dedupKey  String?
+  readAt    DateTime? @db.Timestamptz(6)
+  createdAt DateTime  @default(now()) @db.Timestamptz(6)
+
+  @@unique([userId, dedupKey])
+  @@index([userId, readAt])
+  @@map("notifications")
+}
+
+// ---------------------------------------------------------------------
+// PENDIENTES DEL TURNO
+// ---------------------------------------------------------------------
+
+model Task {
+  id          String     @id @default(uuid()) @db.Uuid
+  title       String
+  description String?
+  priority    Severity   @default(MEDIA)
+  status      TaskStatus @default(ABIERTA)
+  assigneeId  String?    @db.Uuid
+  assignee    User?      @relation("TaskAssignee", fields: [assigneeId], references: [id])
+  createdById String     @db.Uuid
+  createdBy   User       @relation("TaskCreator", fields: [createdById], references: [id])
+  dueAt       DateTime?  @db.Timestamptz(6)
+  entityType  String?
+  entityId    String?    @db.Uuid
+  originHandoverId String? @db.Uuid
+  createdAt   DateTime   @default(now()) @db.Timestamptz(6)
+  completedAt DateTime?  @db.Timestamptz(6)
+  completionNotes String?
+
+  @@index([status, assigneeId])
+  @@map("tasks")
+}
+
+// ---------------------------------------------------------------------
+// CAPACITACIÓN Y MEJORA CONTINUA
+// ---------------------------------------------------------------------
+
+model TrainingSession {
+  id          String          @id @default(uuid()) @db.Uuid
+  title       String
+  scheduledAt DateTime        @db.Timestamptz(6)
+  /// Zona horaria con la que se programó (pendiente de confirmar Centro/Pacífico)
+  timezone    String
+  timezoneConfirmed Boolean   @default(false)
+  durationMin Int             @default(60)
+  agenda      String?
+  topics      String[]
+  isDrill     Boolean         @default(false)
+  drillScenario String?
+  status      TrainingStatus  @default(PROGRAMADA)
+  facilitatorId String?       @db.Uuid
+  summary     String?
+  /// Clave idempotente para la generación automática semanal
+  autoKey     String?         @unique
+  createdAt   DateTime        @default(now()) @db.Timestamptz(6)
+  attendance  TrainingAttendance[]
+  cases       TrainingCase[]
+  agreements  Agreement[]
+  evaluations TrainingEvaluation[]
+
+  @@index([scheduledAt])
+  @@map("training_sessions")
+}
+
+model TrainingAttendance {
+  sessionId String          @db.Uuid
+  userId    String          @db.Uuid
+  session   TrainingSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  user      User            @relation(fields: [userId], references: [id])
+  present   Boolean
+  notes     String?
+
+  @@id([sessionId, userId])
+  @@map("training_attendance")
+}
+
+model TrainingCase {
+  id         String          @id @default(uuid()) @db.Uuid
+  sessionId  String          @db.Uuid
+  session    TrainingSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  incidentId String?         @db.Uuid
+  title      String
+  analysis   String?
+  lessons    String?
+
+  @@map("training_cases")
+}
+
+model Agreement {
+  id          String          @id @default(uuid()) @db.Uuid
+  sessionId   String?         @db.Uuid
+  session     TrainingSession? @relation(fields: [sessionId], references: [id])
+  description String
+  responsibleId String        @db.Uuid
+  responsible User            @relation(fields: [responsibleId], references: [id])
+  dueDate     DateTime        @db.Timestamptz(6)
+  status      AgreementStatus @default(ABIERTO)
+  progressNotes String?
+  completedAt DateTime?       @db.Timestamptz(6)
+  createdAt   DateTime        @default(now()) @db.Timestamptz(6)
+
+  @@index([status, dueDate])
+  @@map("agreements")
+}
+
+model TrainingEvaluation {
+  id        String          @id @default(uuid()) @db.Uuid
+  sessionId String          @db.Uuid
+  session   TrainingSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  userId    String          @db.Uuid
+  score     Float
+  maxScore  Float           @default(100)
+  notes     String?
+
+  @@unique([sessionId, userId])
+  @@map("training_evaluations")
+}
+
+// ---------------------------------------------------------------------
+// CONFIGURACIÓN, AUDITORÍA, AUTOMATIZACIÓN
+// ---------------------------------------------------------------------
+
+model Setting {
+  key       String   @id
+  value     Json
+  critical  Boolean  @default(false)
+  description String?
+  version   Int      @default(1)
+  updatedAt DateTime @updatedAt @db.Timestamptz(6)
+  updatedById String? @db.Uuid
+
+  @@map("settings")
+}
+
+/// Cambios a configuraciones críticas: requieren autorización de un usuario distinto
+model ConfigChangeRequest {
+  id           String              @id @default(uuid()) @db.Uuid
+  targetType   String
+  targetKey    String
+  oldValue     Json?
+  newValue     Json
+  reason       String
+  status       ChangeRequestStatus @default(PENDIENTE)
+  requestedById String             @db.Uuid
+  requestedAt  DateTime            @default(now()) @db.Timestamptz(6)
+  decidedById  String?             @db.Uuid
+  decidedAt    DateTime?           @db.Timestamptz(6)
+  decisionComment String?
+
+  @@index([status])
+  @@map("config_change_requests")
+}
+
+/// Bitácora de auditoría INALTERABLE (trigger impide UPDATE/DELETE; hash encadenado)
+model AuditLog {
+  id         String   @id @default(uuid()) @db.Uuid
+  seq        BigInt   @default(autoincrement())
+  at         DateTime @default(now()) @db.Timestamptz(6)
+  actorId    String?  @db.Uuid
+  actorEmail String?
+  action     String
+  entityType String
+  entityId   String?
+  before     Json?
+  after      Json?
+  ip         String?
+  userAgent  String?
+  prevHash   String?
+  hash       String
+
+  @@index([entityType, entityId])
+  @@index([actorId, at])
+  @@index([at])
+  @@map("audit_logs")
+}
+
+/// Ejecuciones del motor de reglas: runKey único evita ejecuciones duplicadas
+model JobRun {
+  id         String    @id @default(uuid()) @db.Uuid
+  job        String
+  runKey     String    @unique
+  status     JobStatus @default(EJECUTANDO)
+  attempts   Int       @default(1)
+  startedAt  DateTime  @default(now()) @db.Timestamptz(6)
+  finishedAt DateTime? @db.Timestamptz(6)
+  result     Json?
+  error      String?
+
+  @@index([job, startedAt])
+  @@map("job_runs")
+}
+
+model KpiSnapshot {
+  id        String   @id @default(uuid()) @db.Uuid
+  period    String
+  periodKey String
+  metrics   Json
+  createdAt DateTime @default(now()) @db.Timestamptz(6)
+
+  @@unique([period, periodKey])
+  @@map("kpi_snapshots")
+}
+
+model Integration {
+  id        String   @id @default(uuid()) @db.Uuid
+  key       String   @unique
+  name      String
+  kind      String
+  /// Una integración no se considera operativa hasta ser validada
+  enabled   Boolean  @default(false)
+  validated Boolean  @default(false)
+  notes     String?
+  lastSyncAt DateTime? @db.Timestamptz(6)
+  lastError String?
+  updatedAt DateTime @updatedAt @db.Timestamptz(6)
+
+  @@map("integrations")
+}
