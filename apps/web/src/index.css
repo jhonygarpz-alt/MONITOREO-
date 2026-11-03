@@ -9,7 +9,7 @@
   :focus-visible { @apply outline-none ring-2 ring-brand-500 ring-offset-2; }
 }
 @layer components {
-  .card { @apply rounded-2xl border border-ink-200/70 bg-white shadow-card; }
+  .card { @apply min-w-0 rounded-2xl border border-ink-200/70 bg-white shadow-card; }
   .input { @apply w-full rounded-xl border border-ink-200 bg-white px-3.5 py-2.5 text-[15px] text-ink-900 placeholder:text-ink-400 transition focus:border-brand-500 focus:outline-none focus:ring-4 focus:ring-brand-100 disabled:bg-ink-50 disabled:text-ink-500; }
   .label { @apply mb-1.5 block text-sm font-medium text-ink-700; }
   .table-clean { @apply w-full text-left text-sm; }

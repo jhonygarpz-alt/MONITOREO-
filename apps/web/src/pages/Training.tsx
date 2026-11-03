@@ -8,15 +8,14 @@ import { fmtDate, fmtDateTime, toLocalInput } from '../lib/format';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 export function TrainingPage() {
-  const { can } = useAuth();
+  const { can, me } = useAuth();
   const [tab, setTab] = useState<'sessions' | 'agreements'>('sessions');
   const [modal, setModal] = useState<'' | 'session' | 'agreement'>('');
   const [open, setOpen] = useState<string | null>(null);
   const sessions = useApi<any[]>(['training'], '/training/sessions');
   const agreements = useApi<any[]>(['agreements'], '/training/agreements?open=false');
   const users = useApi<any[]>(['users'], '/admin/users');
-  const settings = useApi<any[]>(['settings'], '/admin/settings');
-  const tzConfirmed = settings.data?.find((s) => s.key === 'training.timezoneConfirmed')?.value;
+  const tzConfirmed = me?.settings.trainingTimezoneConfirmed;
   const inv = [['training'], ['agreements']];
   const createS = useAction((v: any) => api.post('/training/sessions', v), { invalidate: inv, success: 'Sesión programada' });
   const createA = useAction((v: any) => api.post('/training/agreements', v), { invalidate: inv, success: 'Acuerdo registrado y notificado al responsable' });

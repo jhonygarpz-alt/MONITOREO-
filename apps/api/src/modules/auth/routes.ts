@@ -7,6 +7,7 @@ import { audit } from '../../lib/audit';
 import { parse } from '../../lib/http';
 import { env } from '../../config/env';
 import { authenticate, clearAuthCache, COOKIE, signToken } from '../../middleware/auth';
+import { getSetting } from '../../lib/settings';
 
 export const authRouter = Router();
 const MAX_FAILED = 5;
@@ -45,7 +46,8 @@ authRouter.post('/logout', (req, res) => {
 
 authRouter.get('/me', authenticate, asyncH(async (req, res) => {
   const u = await prisma.user.findUniqueOrThrow({ where: { id: req.user!.id }, select: { mustChangePwd: true, phone: true, employeeNo: true } });
-  res.json({ id: req.user!.id, email: req.user!.email, fullName: req.user!.fullName, roles: req.user!.roles, permissions: [...req.user!.permissions], ...u });
+  const [timezone, trainingTimezoneConfirmed] = await Promise.all([getSetting<string>('system.timezone'), getSetting<boolean>('training.timezoneConfirmed')]);
+  res.json({ id: req.user!.id, email: req.user!.email, fullName: req.user!.fullName, roles: req.user!.roles, permissions: [...req.user!.permissions], ...u, settings: { timezone, trainingTimezoneConfirmed } });
 }));
 
 authRouter.post('/change-password', authenticate, asyncH(async (req, res) => {

@@ -26,7 +26,7 @@ export async function computeKpis(f: KpiFilters) {
   const closed = cycles.filter((c) => ['COMPLETADO', 'VENCIDO', 'INCOMPLETO'].includes(c.status));
   if (!closed.length) quality.push('Sin ciclos de barrido cerrados en el periodo');
   const reviews = await prisma.sweepReview.findMany({
-    where: { cycle: { startsAt: { gte: f.from, lt: f.to } }, ...uFilter, ...(f.monitoristaId ? { reviewedById: f.monitoristaId } : {}) },
+    where: { cycle: { startsAt: { gte: f.from, lt: f.to }, status: { not: 'EN_CURSO' } }, ...uFilter, ...(f.monitoristaId ? { reviewedById: f.monitoristaId } : {}) },
     select: { status: true, gpsStatus: true, reviewedById: true },
   });
   const reviewed = reviews.filter((r) => !['PENDIENTE', 'EN_REVISION'].includes(r.status));

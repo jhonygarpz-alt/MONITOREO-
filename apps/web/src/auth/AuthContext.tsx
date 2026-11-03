@@ -2,7 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useState, type React
 import { api } from '../lib/api';
 import { setTimezone } from '../lib/format';
 
-export interface Me { id: string; email: string; fullName: string; roles: string[]; permissions: string[]; mustChangePwd: boolean }
+export interface Me { id: string; email: string; fullName: string; roles: string[]; permissions: string[]; mustChangePwd: boolean; settings: { timezone: string; trainingTimezoneConfirmed: boolean } }
 interface Ctx { me: Me | null; loading: boolean; can: (...p: string[]) => boolean; login: (e: string, p: string) => Promise<void>; logout: () => Promise<void>; refresh: () => Promise<void> }
 const AuthCtx = createContext<Ctx>(null as unknown as Ctx);
 export const useAuth = () => useContext(AuthCtx);
@@ -13,10 +13,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const refresh = useCallback(async () => {
     try {
       const m = await api.get<Me>('/auth/me');
+      setTimezone(m.settings.timezone);
       setMe(m);
-      api.get<{ key: string; value: unknown }[]>('/admin/settings').then((s) => {
-        const tz = s.find((x) => x.key === 'system.timezone')?.value; if (typeof tz === 'string') setTimezone(tz);
-      }).catch(() => {});
     } catch { setMe(null); } finally { setLoading(false); }
   }, []);
   useEffect(() => { void refresh(); }, [refresh]);

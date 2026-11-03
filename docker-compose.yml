@@ -1,0 +1,38 @@
+# Despliegue de referencia: PostgreSQL + API (sirve también el frontend) + worker del motor de reglas.
+# Cree un archivo .env junto a este compose con POSTGRES_PASSWORD y JWT_SECRET.
+services:
+  db:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: cim
+      POSTGRES_USER: cim
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Defina POSTGRES_PASSWORD}
+    volumes: [pgdata:/var/lib/postgresql/data]
+    healthcheck: { test: ["CMD-SHELL", "pg_isready -U cim"], interval: 10s, retries: 10 }
+
+  api:
+    build: .
+    restart: unless-stopped
+    depends_on: { db: { condition: service_healthy } }
+    environment:
+      DATABASE_URL: postgresql://cim:${POSTGRES_PASSWORD}@db:5432/cim
+      JWT_SECRET: ${JWT_SECRET:?Defina JWT_SECRET}
+      CORS_ORIGIN: ${PUBLIC_URL:-http://localhost:4000}
+      COOKIE_SECURE: ${COOKIE_SECURE:-false}
+      RUN_SCHEDULER: "false"
+    volumes: [storage:/data/storage]
+    ports: ["4000:4000"]
+
+  worker:
+    build: .
+    restart: unless-stopped
+    depends_on: { api: { condition: service_started } }
+    environment:
+      DATABASE_URL: postgresql://cim:${POSTGRES_PASSWORD}@db:5432/cim
+      JWT_SECRET: ${JWT_SECRET}
+    command: ["node", "dist/worker.js"]
+
+volumes:
+  pgdata:
+  storage:

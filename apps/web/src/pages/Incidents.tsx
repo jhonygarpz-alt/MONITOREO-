@@ -19,7 +19,7 @@ export function IncidentsPage() {
   useEffect(() => { if (sp.get('nueva')) setCreate(true); }, [sp]);
   const { data, isLoading } = useApi<any[]>(['incidents', tab, q], `/incidents?status=${tab}${q ? `&q=${encodeURIComponent(q)}` : ''}`, { refetchInterval: 30000 });
   const fleet = useApi<any[]>(['fleet', null], create ? '/units/fleet' : null);
-  const save = useAction((v: any) => api.post<{ id: string }>('/incidents', v), { invalidate: [['incidents']], success: 'Incidencia abierta', onSuccess: (r) => nav(`/incidencias/${r.id}`) });
+  const save = useAction((v: any) => api.post<{ id: string }>('/incidents', v), { invalidate: [['incidents']], success: 'Incidencia abierta', onSuccess: (r) => setTimeout(() => nav(`/incidencias/${r.id}`), 0) });
   return (
     <>
       <PageHeader title="Incidencias" subtitle="Expedientes con historial cronológico inalterable" actions={can('incidents.manage') && <Button icon={<Plus className="h-4 w-4" />} onClick={() => setCreate(true)}>Reportar incidencia</Button>} />
