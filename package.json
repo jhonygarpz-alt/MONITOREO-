@@ -1,0 +1,14 @@
+{
+  "name": "centro-inteligente-de-monitoreo",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Centro Inteligente de Monitoreo — Control Operativo y Seguridad Patrimonial",
+  "workspaces": ["apps/api", "apps/web"],
+  "scripts": {
+    "dev:api": "npm run dev -w @cim/api",
+    "dev:web": "npm run dev -w @cim/web",
+    "build": "npm run build -w @cim/api && npm run build -w @cim/web",
+    "test": "npm test -w @cim/api",
+    "typecheck": "npm run typecheck -w @cim/api && npm run typecheck -w @cim/web"
+  }
+}
