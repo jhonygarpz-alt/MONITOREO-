@@ -7,3 +7,4 @@ storage-test/
 coverage/
 .DS_Store
 apps/web/dist/
+*.tsbuildinfo
