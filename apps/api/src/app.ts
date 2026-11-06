@@ -34,6 +34,8 @@ import { catalogsRouter } from './modules/catalogs/routes';
 import { notificationsRouter } from './modules/notifications/routes';
 import { documentsRouter } from './modules/documents/routes';
 import { buildOpenApi } from './openapi';
+import crypto from 'node:crypto';
+import { tick } from './engine/scheduler';
 
 export function createApp() {
   const app = express();
@@ -61,6 +63,18 @@ export function createApp() {
   });
   app.get('/api/openapi.json', (_req, res) => res.json(buildOpenApi(api)));
   app.use('/api/auth', authRouter);
+
+  // Ejecución del motor de reglas por un programador externo (p.ej. pg_cron de Supabase).
+  // Útil en hosting que suspende el servicio por inactividad: la llamada lo despierta y ejecuta los trabajos.
+  app.post('/api/internal/tick', async (req, res, next) => {
+    try {
+      const given = req.get('x-cron-secret') ?? '';
+      const expected = env.CRON_SECRET ?? '';
+      const ok = expected.length > 0 && given.length === expected.length && crypto.timingSafeEqual(Buffer.from(given), Buffer.from(expected));
+      if (!ok) return res.status(401).json({ error: { code: 'UNAUTHORIZED', message: 'No autorizado' } });
+      res.json({ ok: true, results: await tick() });
+    } catch (e) { next(e); }
+  });
 
   api.use(authenticate);
   api.use('/dashboard', dashboardRouter);

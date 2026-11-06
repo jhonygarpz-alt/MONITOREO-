@@ -9,6 +9,10 @@ const schema = z.object({
   JWT_EXPIRES_HOURS: z.coerce.number().default(12),
   CORS_ORIGIN: z.string().default('http://localhost:5173'),
   STORAGE_DIR: z.string().default('./storage'),
+  /** filesystem: carpeta STORAGE_DIR; database: dentro de PostgreSQL (hosting sin disco persistente) */
+  STORAGE_DRIVER: z.enum(['filesystem', 'database']).default('filesystem'),
+  /** Secreto para que un programador externo (p.ej. pg_cron de Supabase) ejecute el motor de reglas */
+  CRON_SECRET: z.string().min(24).optional(),
   MAX_UPLOAD_MB: z.coerce.number().default(15),
   RUN_SCHEDULER: z.enum(['true', 'false']).default('true'),
   SCHEDULER_TICK_SECONDS: z.coerce.number().default(60),
