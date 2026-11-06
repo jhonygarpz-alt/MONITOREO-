@@ -7,10 +7,12 @@ import './index.css';
 import { App } from './App';
 import { AuthProvider } from './auth/AuthContext';
 import { ToastProvider } from './components/toast';
+import { ThemeProvider } from './lib/theme';
 
 const qc = new QueryClient({ defaultOptions: { queries: { staleTime: 15000, retry: 1, refetchOnWindowFocus: true } } });
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
+    <ThemeProvider>
     <QueryClientProvider client={qc}>
       <ToastProvider>
         <AuthProvider>
@@ -18,5 +20,6 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
         </AuthProvider>
       </ToastProvider>
     </QueryClientProvider>
+    </ThemeProvider>
   </React.StrictMode>,
 );

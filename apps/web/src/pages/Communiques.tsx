@@ -16,7 +16,7 @@ export const COMM_TYPES = { AVISO_PREVENTIVO: 'Aviso preventivo', REGLA_SEGURIDA
 export const CommuniqueCard = forwardRef<HTMLDivElement, { templateKey: string; type: string; title: string; body: string; folio?: string; date?: string }>(({ templateKey, type, title, body, folio, date }, ref) => {
   const accent = templateKey === 'preventivo' ? 'bg-amber-500' : templateKey === 'critico' ? 'bg-red-600' : 'bg-brand-500';
   return (
-    <div ref={ref} className="w-full max-w-[560px] overflow-hidden rounded-3xl bg-white shadow-card ring-1 ring-ink-200" style={{ fontFamily: 'Inter, system-ui, sans-serif' }}>
+    <div ref={ref} className="force-light w-full max-w-[560px] overflow-hidden rounded-3xl bg-surface shadow-card ring-1 ring-ink-200" style={{ fontFamily: 'Inter, system-ui, sans-serif' }}>
       <div className="bg-gradient-to-br from-brand-700 to-brand-900 px-7 py-6 text-white">
         <div className="flex items-center gap-3"><img src={logo} className="h-10 w-10" alt="" /><div><p className="text-sm font-bold tracking-wide">CENTRO INTELIGENTE DE MONITOREO</p><p className="text-xs text-brand-100">Control Operativo y Seguridad Patrimonial</p></div></div>
       </div>

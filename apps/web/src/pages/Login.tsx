@@ -13,19 +13,19 @@ export function LoginPage() {
   const [busy, setBusy] = useState(false);
   return (
     <div className="grid min-h-screen lg:grid-cols-2">
-      <div className="relative hidden overflow-hidden bg-gradient-to-br from-brand-700 via-brand-800 to-brand-950 p-12 text-white lg:flex lg:flex-col lg:justify-between">
+      <div className="relative hidden overflow-hidden bg-gradient-to-br from-[#0F6B3A] via-[#0C5530] to-[#052615] p-12 text-white lg:flex lg:flex-col lg:justify-between">
         <div className="flex items-center gap-3"><img src={logo} className="h-11 w-11" alt="" /><span className="text-lg font-semibold">Centro Inteligente de Monitoreo</span></div>
         <div>
           <h1 className="text-4xl font-bold leading-tight text-white">Control Operativo y<br />Seguridad Patrimonial</h1>
-          <p className="mt-4 max-w-md text-brand-100">Supervise la flota, anticipe riesgos y coordine la respuesta con trazabilidad completa.</p>
+          <p className="mt-4 max-w-md text-[#D3EDDC]">Supervise la flota, anticipe riesgos y coordine la respuesta con trazabilidad completa.</p>
           <div className="mt-10 grid max-w-md grid-cols-3 gap-3 text-sm">
             {['Barridos cada 2 h', 'Protocolos guiados', 'Auditoría inalterable'].map((t) => <div key={t} className="rounded-2xl bg-white/10 p-3 font-medium">{t}</div>)}
           </div>
         </div>
-        <p className="text-xs text-brand-200">Uso exclusivo de personal autorizado. Toda actividad queda registrada.</p>
+        <p className="text-xs text-[#A8DBBA]">Uso exclusivo de personal autorizado. Toda actividad queda registrada.</p>
         <div className="pointer-events-none absolute -right-24 -top-24 h-96 w-96 rounded-full bg-white/5" />
       </div>
-      <div className="flex items-center justify-center bg-white p-6">
+      <div className="flex items-center justify-center bg-surface p-6">
         <form className="w-full max-w-sm" onSubmit={async (e) => { e.preventDefault(); setBusy(true); setErr(null); try { await login(email, password); } catch (x) { setErr(x); } finally { setBusy(false); } }}>
           <div className="mb-8 lg:hidden"><img src={logo} className="mb-3 h-12 w-12" alt="" /><p className="text-lg font-bold">Centro Inteligente de Monitoreo</p></div>
           <h2 className="text-2xl font-bold">Iniciar sesión</h2>

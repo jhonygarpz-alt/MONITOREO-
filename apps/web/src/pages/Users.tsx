@@ -6,7 +6,7 @@ import { FormModal } from '../components/forms';
 import { fmtDateTime } from '../lib/format';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
-export function UsersPage() {
+export function UsersPage({ embedded = false }: { embedded?: boolean }) {
   const [edit, setEdit] = useState<any>(null);
   const [temp, setTemp] = useState<{ email?: string; tempPassword: string } | null>(null);
   const users = useApi<any[]>(['users'], '/admin/users');
@@ -15,7 +15,13 @@ export function UsersPage() {
   const reset = useAction((id: string) => api.post<any>(`/admin/users/${id}/reset-password`), { success: 'Contraseña restablecida', onSuccess: (r) => setTemp(r) });
   return (
     <>
-      <PageHeader title="Usuarios" subtitle="Los usuarios no se eliminan: se desactivan para conservar la trazabilidad" actions={<Button icon={<Plus className="h-4 w-4" />} onClick={() => setEdit({ email: '', fullName: '', employeeNo: '', phone: '', roles: ['MONITORISTA'] })}>Nuevo usuario</Button>} />
+      {embedded ? (
+        <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <p className="text-sm text-ink-500">Cree cuentas y asigne su rol. Los usuarios no se eliminan: se desactivan para conservar la trazabilidad.</p>
+          <Button icon={<Plus className="h-4 w-4" />} onClick={() => setEdit({ email: '', fullName: '', employeeNo: '', phone: '', roles: ['MONITORISTA'] })}>Nuevo usuario</Button>
+        </div>
+      ) : <PageHeader title="Usuarios" subtitle="Los usuarios no se eliminan: se desactivan para conservar la trazabilidad" actions={<Button icon={<Plus className="h-4 w-4" />} onClick={() => setEdit({ email: '', fullName: '', employeeNo: '', phone: '', roles: ['MONITORISTA'] })}>Nuevo usuario</Button>} />}
+      <RolesSummary roles={roles.data ?? []} users={users.data ?? []} />
       <Card padded={false}><Table head={['Nombre', 'Correo', 'Roles', 'Estado', 'Último acceso', '']}>{users.data?.map((u) => <tr key={u.id}><td className="font-medium">{u.fullName}</td><td>{u.email}</td><td className="space-x-1">{u.roles.map((r: any) => <Badge key={r.role.key}>{r.role.name}</Badge>)}</td><td>{u.active ? <Badge tone="green">Activo</Badge> : <Badge tone="red">Inactivo</Badge>}</td><td>{fmtDateTime(u.lastLoginAt)}</td><td className="whitespace-nowrap"><Button size="sm" variant="ghost" onClick={() => setEdit({ id: u.id, email: u.email, fullName: u.fullName, employeeNo: u.employeeNo ?? '', phone: u.phone ?? '', roles: u.roles.map((r: any) => r.role.key), active: u.active })}>Editar</Button><Button size="sm" variant="ghost" icon={<KeyRound className="h-4 w-4" />} onClick={() => reset.mutate(u.id)}>Restablecer</Button></td></tr>)}</Table></Card>
       {edit && <FormModal key={edit.id ?? 'new'} open onClose={() => setEdit(null)} title={edit.id ? 'Editar usuario' : 'Nuevo usuario'} initial={edit} onSubmit={(v) => save.mutateAsync(edit.id ? { id: edit.id, fullName: v.fullName, employeeNo: v.employeeNo || null, phone: v.phone || null, roles: v.roles, active: v.active } : { ...v, employeeNo: v.employeeNo || null, phone: v.phone || null })}>
         {(v, set) => <>
@@ -32,5 +38,23 @@ export function UsersPage() {
         <p className="mt-4 rounded-xl bg-ink-100 p-4 text-center font-mono text-lg">{temp?.tempPassword}</p>
       </Modal>
     </>
+  );
+}
+
+function RolesSummary({ roles, users }: { roles: any[]; users: any[] }) {
+  if (!roles.length) return null;
+  return (
+    <div className="mb-4 grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
+      {roles.map((r) => {
+        const n = users.filter((u) => u.active && u.roles.some((x: any) => x.role.key === r.key)).length;
+        return (
+          <div key={r.key} className="rounded-xl border border-ink-200 bg-surface p-3">
+            <p className="flex items-center justify-between text-sm font-semibold">{r.name}<Badge>{n}</Badge></p>
+            <p className="mt-0.5 text-xs text-ink-500">{r.description}</p>
+            <p className="mt-1 text-[11px] text-ink-400">{r.permissions.length} permisos</p>
+          </div>
+        );
+      })}
+    </div>
   );
 }

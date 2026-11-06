@@ -9,7 +9,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonHTMLAttributes<HTMLBut
     <button ref={ref} disabled={disabled || loading} {...p}
       className={clsx('inline-flex items-center justify-center gap-2 rounded-xl font-semibold transition active:scale-[.98] disabled:cursor-not-allowed disabled:opacity-50',
         { sm: 'px-3 py-1.5 text-sm', md: 'px-4 py-2.5 text-[15px]', lg: 'px-5 py-3.5 text-base' }[size],
-        { primary: 'bg-brand-700 text-white shadow-sm hover:bg-brand-800', secondary: 'border border-ink-200 bg-white text-ink-800 hover:bg-ink-50', ghost: 'text-ink-600 hover:bg-ink-100',
+        { primary: 'bg-brand-700 text-white shadow-sm hover:bg-brand-800', secondary: 'border border-ink-200 bg-surface text-ink-800 hover:bg-ink-50', ghost: 'text-ink-600 hover:bg-ink-100',
           danger: 'bg-red-600 text-white hover:bg-red-700', warning: 'bg-amber-500 text-white hover:bg-amber-600' }[variant], className)}>
       {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : icon}{children}
     </button>
@@ -116,7 +116,7 @@ export function Select({ options, placeholder, ...p }: SelectHTMLAttributes<HTML
 }
 export function Check({ checked, onChange, label, hint }: { checked: boolean; onChange: (v: boolean) => void; label: ReactNode; hint?: ReactNode }) {
   return (
-    <label className={clsx('flex cursor-pointer items-start gap-3 rounded-xl border p-3 transition', checked ? 'border-brand-300 bg-brand-50' : 'border-ink-200 bg-white hover:bg-ink-50')}>
+    <label className={clsx('flex cursor-pointer items-start gap-3 rounded-xl border p-3 transition', checked ? 'border-brand-300 bg-brand-50' : 'border-ink-200 bg-surface hover:bg-ink-50')}>
       <input type="checkbox" className="mt-0.5 h-5 w-5 rounded accent-brand-700" checked={checked} onChange={(e) => onChange(e.target.checked)} />
       <span><span className="block text-sm font-medium text-ink-800">{label}</span>{hint && <span className="block text-xs text-ink-500">{hint}</span>}</span>
     </label>
@@ -133,7 +133,7 @@ export function Segmented<T extends string>({ value, onChange, options }: { valu
         return (
           <button type="button" key={o.value} onClick={() => onChange(o.value)}
             className={clsx('flex items-center justify-center gap-1.5 rounded-xl border px-2 py-2.5 text-sm font-semibold transition',
-              active ? { green: 'border-brand-600 bg-brand-600 text-white', amber: 'border-amber-500 bg-amber-500 text-white', red: 'border-red-600 bg-red-600 text-white', gray: 'border-ink-600 bg-ink-600 text-white', blue: 'border-sky-600 bg-sky-600 text-white' }[t] : 'border-ink-200 bg-white text-ink-700 hover:bg-ink-50')}>
+              active ? { green: 'border-brand-600 bg-brand-600 text-white', amber: 'border-amber-500 bg-amber-500 text-white', red: 'border-red-600 bg-red-600 text-white', gray: 'border-ink-600 bg-ink-600 text-white', blue: 'border-sky-600 bg-sky-600 text-white' }[t] : 'border-ink-200 bg-surface text-ink-700 hover:bg-ink-50')}>
             {o.icon}{o.label}
           </button>
         );
@@ -151,8 +151,8 @@ export function Modal({ open, onClose, title, children, footer, wide }: { open: 
   }, [open, onClose]);
   if (!open) return null;
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-ink-900/40 backdrop-blur-[2px] sm:items-center sm:p-4" onMouseDown={(e) => e.target === e.currentTarget && onClose()} role="dialog" aria-modal="true">
-      <div className={clsx('flex max-h-[92vh] w-full flex-col rounded-t-3xl bg-white shadow-pop sm:rounded-3xl', wide ? 'sm:max-w-4xl' : 'sm:max-w-lg')}>
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 backdrop-blur-[2px] sm:items-center sm:p-4" onMouseDown={(e) => e.target === e.currentTarget && onClose()} role="dialog" aria-modal="true">
+      <div className={clsx('flex max-h-[92vh] w-full flex-col rounded-t-3xl bg-surface shadow-pop sm:rounded-3xl', wide ? 'sm:max-w-4xl' : 'sm:max-w-lg')}>
         <header className="flex items-center justify-between border-b border-ink-100 px-5 py-4">
           <h2 className="text-lg font-semibold">{title}</h2>
           <button onClick={onClose} className="rounded-lg p-1.5 text-ink-500 hover:bg-ink-100" aria-label="Cerrar"><X className="h-5 w-5" /></button>
@@ -168,7 +168,7 @@ export function Tabs<T extends string>({ value, onChange, tabs }: { value: T; on
   return (
     <div className="mb-5 flex gap-1 overflow-x-auto rounded-xl bg-ink-100 p-1">
       {tabs.map((t) => (
-        <button key={t.value} onClick={() => onChange(t.value)} className={clsx('flex shrink-0 items-center gap-1.5 rounded-lg px-3.5 py-2 text-sm font-semibold transition', value === t.value ? 'bg-white text-ink-900 shadow-sm' : 'text-ink-500 hover:text-ink-800')}>
+        <button key={t.value} onClick={() => onChange(t.value)} className={clsx('flex shrink-0 items-center gap-1.5 rounded-lg px-3.5 py-2 text-sm font-semibold transition', value === t.value ? 'bg-surface text-ink-900 shadow-sm' : 'text-ink-500 hover:text-ink-800')}>
           {t.label}{t.count !== undefined && t.count > 0 && <span className="rounded-full bg-ink-200 px-1.5 text-xs text-ink-700">{t.count}</span>}
         </button>
       ))}
