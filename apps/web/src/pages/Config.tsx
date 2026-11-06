@@ -6,19 +6,23 @@ import { Badge, Button, Card, Field, Input, Notice, PageHeader, Select, StatusBa
 import { FormModal } from '../components/forms';
 import { fmtDateTime } from '../lib/format';
 import { label } from '../lib/labels';
+import { useTheme, type ThemePref } from '../lib/theme';
+import { UsersPage } from './Users';
+import { Sun, Moon, Monitor } from 'lucide-react';
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 export function ConfigPage() {
   const { can, me } = useAuth();
-  const [tab, setTab] = useState<'params' | 'changes' | 'thresholds' | 'matrix' | 'integrations' | 'roles' | 'jobs'>('params');
+  const admin = can('admin.settings', 'admin.settings.approve', 'admin.integrations', 'admin.audit', 'dashboard.executive');
+  const [tab, setTab] = useState<'appearance' | 'users' | 'params' | 'changes' | 'thresholds' | 'matrix' | 'integrations' | 'roles' | 'jobs'>(can('admin.users') ? 'users' : admin ? 'params' : 'appearance');
   const [edit, setEdit] = useState<any>(null);
   const [decide, setDecide] = useState<any>(null);
   const [th, setTh] = useState<any>(null);
   const [mx, setMx] = useState(false);
   const [integ, setInteg] = useState<any>(null);
   const [role, setRole] = useState<any>(null);
-  const settings = useApi<any[]>(['settings'], '/admin/settings');
-  const changes = useApi<any[]>(['changes'], '/admin/change-requests');
+  const settings = useApi<any[]>(['settings'], admin ? '/admin/settings' : null);
+  const changes = useApi<any[]>(['changes'], can('admin.settings', 'admin.settings.approve', 'admin.audit') ? '/admin/change-requests' : null);
   const thresholds = useApi<any[]>(['thresholds'], '/ops/thresholds');
   const matrix = useApi<any[]>(['matrix'], tab === 'matrix' ? '/admin/escalation-matrix' : null);
   const users = useApi<any[]>(['users'], tab === 'matrix' ? '/admin/users' : null);
@@ -39,8 +43,16 @@ export function ConfigPage() {
   const fmtVal = (v: unknown) => (typeof v === 'object' ? JSON.stringify(v) : String(v));
   return (
     <>
-      <PageHeader title="Administración y configuración" subtitle="Toda configuración crítica conserva historial y requiere autorización de una segunda persona" />
-      <Tabs value={tab} onChange={setTab} tabs={[{ value: 'params', label: 'Parámetros' }, { value: 'changes', label: 'Solicitudes de cambio', count: pending.length }, { value: 'thresholds', label: 'Tiempos muertos' }, { value: 'matrix', label: 'Matriz de escalamiento' }, { value: 'integrations', label: 'Integraciones' }, ...(can('admin.roles') ? [{ value: 'roles' as const, label: 'Roles y permisos' }] : []), { value: 'jobs', label: 'Automatizaciones' }]} />
+      <PageHeader title="Configuración" subtitle={admin ? 'Toda configuración crítica conserva historial y requiere autorización de una segunda persona' : 'Preferencias de la aplicación'} />
+      <Tabs value={tab} onChange={setTab} tabs={[
+        ...(can('admin.users') ? [{ value: 'users' as const, label: 'Usuarios y roles' }] : []),
+        { value: 'appearance' as const, label: 'Apariencia' },
+        ...(admin ? [{ value: 'params' as const, label: 'Parámetros' }, { value: 'changes' as const, label: 'Solicitudes de cambio', count: pending.length }, { value: 'thresholds' as const, label: 'Tiempos muertos' }, { value: 'matrix' as const, label: 'Matriz de escalamiento' }, { value: 'integrations' as const, label: 'Integraciones' }] : []),
+        ...(can('admin.roles') ? [{ value: 'roles' as const, label: 'Permisos por rol' }] : []),
+        ...(admin ? [{ value: 'jobs' as const, label: 'Automatizaciones' }] : []),
+      ]} />
+      {tab === 'appearance' && <Appearance />}
+      {tab === 'users' && <UsersPage embedded />}
       {tab === 'params' && <Card padded={false}><Table head={['Parámetro', 'Valor vigente', 'Tipo', 'Versión', '']}>{settings.data?.map((s) => <tr key={s.key}><td><p className="font-medium">{s.description}</p><p className="font-mono text-xs text-ink-400">{s.key}</p></td><td className="font-mono text-sm">{fmtVal(s.value)}</td><td>{s.critical ? <Badge tone="red">Crítico</Badge> : <Badge>Normal</Badge>}</td><td>v{s.version}</td><td>{can('admin.settings') && <Button size="sm" variant="ghost" onClick={() => setEdit(s)}>Solicitar cambio</Button>}</td></tr>)}</Table></Card>}
       {tab === 'changes' && <Card padded={false}><Table head={['Fecha', 'Configuración', 'Anterior → nuevo', 'Justificación', 'Estado', '']} empty={!changes.data?.length}>{changes.data?.map((c) => <tr key={c.id}><td>{fmtDateTime(c.requestedAt)}</td><td><b>{c.targetType}</b><p className="font-mono text-xs">{c.targetKey}</p></td><td className="max-w-xs font-mono text-xs">{fmtVal(c.oldValue)} → <b>{fmtVal(c.newValue)}</b></td><td className="max-w-xs text-sm">{c.reason}</td><td><StatusBadge value={c.status} />{c.decisionComment && <p className="text-xs text-ink-500">{c.decisionComment}</p>}</td><td>{c.status === 'PENDIENTE' && can('admin.settings.approve') && c.requestedById !== me?.id && <Button size="sm" onClick={() => setDecide(c)}>Decidir</Button>}{c.status === 'PENDIENTE' && c.requestedById === me?.id && <span className="text-xs text-ink-500">Requiere otra persona</span>}</td></tr>)}</Table></Card>}
       {tab === 'thresholds' && <Card padded={false}><Table head={['Operación', 'Advertencia', 'Máximo', 'Escalamiento', '']}>{thresholds.data?.map((t) => <tr key={t.id}><td className="font-medium">{label(t.operationType)}</td><td>{t.warnMinutes} min</td><td>{t.maxMinutes} min</td><td>{t.escalateMinutes} min</td><td>{can('admin.settings') && <Button size="sm" variant="ghost" onClick={() => setTh(t)}>Solicitar cambio</Button>}</td></tr>)}</Table></Card>}
@@ -79,5 +91,27 @@ export function ConfigPage() {
       </FormModal>}
       <span className="hidden"><Settings /><UsersIcon /></span>
     </>
+  );
+}
+
+function Appearance() {
+  const { pref, setPref } = useTheme();
+  const opts: { v: ThemePref; t: string; d: string; icon: React.ReactNode }[] = [
+    { v: 'light', t: 'Claro', d: 'Fondo blanco, ideal para oficinas iluminadas', icon: <Sun className="h-6 w-6" /> },
+    { v: 'dark', t: 'Oscuro', d: 'Menos brillo para turnos nocturnos y centro de monitoreo', icon: <Moon className="h-6 w-6" /> },
+    { v: 'system', t: 'Automático', d: 'Sigue la configuración del equipo', icon: <Monitor className="h-6 w-6" /> },
+  ];
+  return (
+    <Card title="Tema de la aplicación" subtitle="Se guarda en este navegador. Comandas y comunicados se exportan siempre en tema claro.">
+      <div className="grid gap-3 sm:grid-cols-3">
+        {opts.map((o) => (
+          <button key={o.v} onClick={() => setPref(o.v)} className={`flex flex-col items-start gap-2 rounded-2xl border-2 p-4 text-left transition ${pref === o.v ? 'border-brand-600 bg-brand-50' : 'border-ink-200 hover:bg-ink-50'}`}>
+            <span className={pref === o.v ? 'text-brand-700' : 'text-ink-500'}>{o.icon}</span>
+            <span className="font-semibold">{o.t}</span>
+            <span className="text-sm text-ink-500">{o.d}</span>
+          </button>
+        ))}
+      </div>
+    </Card>
   );
 }

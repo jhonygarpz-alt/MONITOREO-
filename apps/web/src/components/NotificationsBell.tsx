@@ -19,7 +19,7 @@ export function NotificationsBell({ count }: { count: number }) {
         {count > 0 && <span className="absolute right-1.5 top-1.5 grid h-[18px] min-w-[18px] place-items-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white">{count > 99 ? '99+' : count}</span>}
       </button>
       {open && (
-        <div className="absolute right-0 top-12 z-50 w-[min(92vw,380px)] rounded-2xl border border-ink-200 bg-white shadow-pop">
+        <div className="absolute right-0 top-12 z-50 w-[min(92vw,380px)] rounded-2xl border border-ink-200 bg-surface shadow-pop">
           <div className="flex items-center justify-between border-b border-ink-100 px-4 py-3">
             <p className="font-semibold">Notificaciones</p>
             <button className="text-xs font-semibold text-brand-700" onClick={() => readAll.mutate(undefined)}>Marcar todas como leídas</button>

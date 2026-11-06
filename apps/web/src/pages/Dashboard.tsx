@@ -52,7 +52,7 @@ export function DashboardPage() {
         <Card title="Unidades con información atrasada o no disponible" className="lg:col-span-2" padded={false}>
           <div className="grid gap-px bg-ink-100 sm:grid-cols-2">
             {data.attention.filter((a) => a.freshness !== 'ACTUALIZADA').slice(0, 12).map((a) => (
-              <button key={a.id} onClick={() => nav(`/flota/${a.id}`)} className="flex items-center gap-2 bg-white px-5 py-3 text-left hover:bg-ink-50">
+              <button key={a.id} onClick={() => nav(`/flota/${a.id}`)} className="flex items-center gap-2 bg-surface px-5 py-3 text-left hover:bg-ink-50">
                 <b className="w-20">{a.economicNumber}</b><Freshness value={a.freshness} /><span className="text-xs text-ink-500">{a.minutesSincePosition !== null ? `${a.minutesSincePosition} min` : ''}</span><span className="ml-auto"><SourceTag source={a.dataSource} /></span>
               </button>
             ))}

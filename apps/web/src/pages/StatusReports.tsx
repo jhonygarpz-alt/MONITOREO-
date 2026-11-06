@@ -15,7 +15,7 @@ const TRIP_STATUS = ['PROGRAMADO', 'EN_TRASLADO_A_CARGA', 'EN_CARGA', 'CARGADO',
 const Comanda = forwardRef<HTMLDivElement, { s: any }>(({ s }, ref) => {
   const Row = ({ k, v }: { k: string; v: any }) => <div className="flex justify-between gap-4 border-b border-ink-100 py-2 text-sm"><span className="text-ink-500">{k}</span><span className="text-right font-semibold text-ink-900">{v ?? '—'}</span></div>;
   return (
-    <div ref={ref} className="w-full max-w-[520px] overflow-hidden rounded-3xl bg-white ring-1 ring-ink-200" style={{ fontFamily: 'Inter, system-ui, sans-serif' }}>
+    <div ref={ref} className="force-light w-full max-w-[520px] overflow-hidden rounded-3xl bg-surface ring-1 ring-ink-200" style={{ fontFamily: 'Inter, system-ui, sans-serif' }}>
       <div className="flex items-center gap-3 bg-gradient-to-br from-brand-700 to-brand-900 px-6 py-5 text-white"><img src={logo} className="h-9 w-9" alt="" /><div><p className="text-sm font-bold">Reporte de estatus de servicio</p><p className="text-xs text-brand-100">Centro Inteligente de Monitoreo</p></div></div>
       <div className="px-6 py-5">
         <div className="mb-3 flex items-center justify-between"><p className="text-lg font-bold">{s.client}</p><span className="rounded-full bg-brand-50 px-3 py-1 text-xs font-bold text-brand-800">{label(s.status)}</span></div>
