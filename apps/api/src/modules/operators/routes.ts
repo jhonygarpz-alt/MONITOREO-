@@ -13,7 +13,7 @@ const opSchema = z.object({
   employeeNo: z.string().trim().min(1), fullName: z.string().trim().min(3), phonePrimary: phone.optional().nullable(), phoneAlt: phone.optional().nullable(),
   emergencyContactName: z.string().optional().nullable(), emergencyContactPhone: phone.optional().nullable(), emergencyContactRelation: z.string().optional().nullable(),
   status: z.enum(['ACTIVO', 'DESCANSO', 'VACACIONES', 'INCAPACIDAD', 'BAJA']).default('ACTIVO'), baseId: uuid.optional().nullable(),
-  authorizedNotes: z.string().max(2000).optional().nullable(), licenseNumber: z.string().optional().nullable(), licenseExpiresAt: z.coerce.date().optional().nullable(),
+  authorizedNotes: z.string().max(2000).optional().nullable(), aliases: z.array(z.string().trim().min(2).max(80)).max(10).optional(), licenseNumber: z.string().optional().nullable(), licenseExpiresAt: z.coerce.date().optional().nullable(),
 });
 const SENSITIVE = ['emergencyContactName', 'emergencyContactPhone', 'emergencyContactRelation'] as const;
 
@@ -27,7 +27,7 @@ function redact<T extends Record<string, unknown>>(o: T, allowed: boolean) {
 operatorsRouter.get('/', requirePerm('operators.view'), asyncH(async (req, res) => {
   const q = String(req.query.q ?? '').trim();
   const where: Prisma.OperatorWhereInput = {};
-  if (q) where.OR = [{ fullName: { contains: q, mode: 'insensitive' } }, { employeeNo: { contains: q, mode: 'insensitive' } }, { assignments: { some: { endAt: null, unit: { economicNumber: { contains: q, mode: 'insensitive' } } } } }];
+  if (q) where.OR = [{ fullName: { contains: q, mode: 'insensitive' } }, { aliases: { has: q.toUpperCase() } }, { employeeNo: { contains: q, mode: 'insensitive' } }, { assignments: { some: { endAt: null, unit: { economicNumber: { contains: q, mode: 'insensitive' } } } } }];
   if (req.query.status) where.status = req.query.status as never;
   if (req.query.baseId) where.baseId = String(req.query.baseId);
   const rows = await prisma.operator.findMany({ where, include: { base: true, assignments: { where: { endAt: null }, include: { unit: { select: { id: true, economicNumber: true } } } } }, orderBy: { fullName: 'asc' } });

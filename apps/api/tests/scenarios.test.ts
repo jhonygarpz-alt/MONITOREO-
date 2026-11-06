@@ -361,3 +361,15 @@ describe('Integración Optima (solo lectura)', () => {
     expect((await prisma.unit.findUniqueOrThrow({ where: { id: t01.id } })).opStatus).toBe('DETENIDA');
   });
 });
+
+describe('Directorio de operadores con alias de Optima', () => {
+  it('la sincronización reconoce al operador por su alias y no lo duplica', async () => {
+    const { syncOptima } = await import('../src/modules/integrations/optima');
+    await prisma.operator.create({ data: { employeeNo: `DIR-${Date.now()}`, fullName: 'Carlos Alberto Prueba Ornelas', aliases: ['CARLOS PRUEBA'] } });
+    const before = await prisma.operator.count();
+    await syncOptima([{ id: 'opt-alias-1', unidad: 'OPT-ALIAS-T', tipoUnidad: 'TRACTOCAMION', placasTractor: 'OPTAL1', sucursal: 'ARGO', operador: 'Carlos Prueba', status: 'En tránsito', enRuta: true }]);
+    expect(await prisma.operator.count()).toBe(before);
+    const u = await prisma.unit.findUniqueOrThrow({ where: { economicNumber: 'OPT-ALIAS-T' }, include: { assignments: { where: { endAt: null }, include: { operator: true } } } });
+    expect(u.assignments[0].operator.fullName).toBe('Carlos Alberto Prueba Ornelas');
+  });
+});

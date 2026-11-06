@@ -572,6 +572,8 @@ model Operator {
   id               String         @id @default(uuid()) @db.Uuid
   employeeNo       String         @unique
   fullName         String
+  /// Otros nombres con que aparece en sistemas externos (p.ej. "Carlos Soto" en Optima)
+  aliases          String[]       @default([])
   phonePrimary     String?
   phoneAlt         String?
   /// Datos restringidos: solo visibles con permiso operators.sensitive
