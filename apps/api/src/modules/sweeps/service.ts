@@ -15,7 +15,18 @@ export async function ensureCurrentCycle(now = new Date(), db: Db = prisma) {
   const startsAt = cycleStartFor(now, interval);
   const cycleKey = startsAt.toISOString();
   const existing = await db.sweepCycle.findUnique({ where: { cycleKey } });
-  if (existing) return { cycle: existing, created: false };
+  if (existing) {
+    // Unidades dadas de alta (o sincronizadas) durante el ciclo se agregan al barrido en curso
+    if (existing.status === 'EN_CURSO') {
+      const missing = await db.unit.findMany({ where: { ...monitoredUnitWhere, opStatus: { not: 'FUERA_DE_SERVICIO' }, sweepReviews: { none: { cycleId: existing.id } } }, select: { id: true } });
+      if (missing.length) {
+        await db.sweepReview.createMany({ data: missing.map((u) => ({ cycleId: existing.id, unitId: u.id })), skipDuplicates: true });
+        const total = await db.sweepReview.count({ where: { cycleId: existing.id } });
+        return { cycle: await db.sweepCycle.update({ where: { id: existing.id }, data: { totalUnits: total } }), created: false };
+      }
+    }
+    return { cycle: existing, created: false };
+  }
   const units = await db.unit.findMany({ where: { ...monitoredUnitWhere, opStatus: { not: 'FUERA_DE_SERVICIO' } }, select: { id: true } });
   try {
     const cycle = await prisma.$transaction(async (tx) => {
