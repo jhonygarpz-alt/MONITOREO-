@@ -27,6 +27,7 @@ export async function latestPositions(db: Db = prisma, unitIds?: string[]) {
 
 export interface FleetUnit {
   id: string; economicNumber: string; plates: string; type: string; opStatus: string; base: string | null; dataSource: DataSource;
+  external: { source: string; status: string | null; location: string | null; notes: string | null; syncedAt: Date | null } | null;
   operator: { id: string; fullName: string; phonePrimary: string | null } | null;
   position: { lat: number; lng: number; speedKph: number | null; recordedAt: Date; source: DataSource; address: string | null } | null;
   freshness: Freshness; minutesSincePosition: number | null;
@@ -37,7 +38,7 @@ export interface FleetUnit {
 }
 
 /** Unidades monitoreables: motrices o cualquier unidad con dispositivo GPS (los remolques/tanques se revisan junto con su motriz). */
-export const monitoredUnitWhere = { active: true, OR: [{ type: { in: ['TRACTOCAMION', 'AUTOTANQUE'] as ('TRACTOCAMION' | 'AUTOTANQUE')[] } }, { devices: { some: { active: true } } }] };
+export const monitoredUnitWhere = { active: true, OR: [{ type: { in: ['TRACTOCAMION', 'AUTOTANQUE', 'TORTON', 'RABON'] as ('TRACTOCAMION' | 'AUTOTANQUE' | 'TORTON' | 'RABON')[] } }, { devices: { some: { active: true } } }] };
 
 export async function fleetStatus(now = new Date(), where: { ids?: string[] } = {}): Promise<FleetUnit[]> {
   const t = await freshnessThresholds();
@@ -61,6 +62,7 @@ export async function fleetStatus(now = new Date(), where: { ids?: string[] } = 
     const trip = u.trips[0];
     return {
       id: u.id, economicNumber: u.economicNumber, plates: u.plates, type: u.type, opStatus: u.opStatus, base: u.base?.name ?? null, dataSource: u.dataSource,
+      external: u.externalSource ? { source: u.externalSource, status: u.externalStatus, location: u.externalLocation, notes: u.externalNotes, syncedAt: u.externalSyncedAt } : null,
       operator: op ? { id: op.id, fullName: op.fullName, phonePrimary: op.phonePrimary } : null,
       position: p ? { lat: p.lat, lng: p.lng, speedKph: p.speedKph, recordedAt: p.recordedAt, source: p.source, address: p.address } : null,
       freshness: computeFreshness(p, now, t),

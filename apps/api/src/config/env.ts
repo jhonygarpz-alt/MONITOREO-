@@ -13,6 +13,9 @@ const schema = z.object({
   STORAGE_DRIVER: z.enum(['filesystem', 'database']).default('filesystem'),
   /** Secreto para que un programador externo (p.ej. pg_cron de Supabase) ejecute el motor de reglas */
   CRON_SECRET: z.string().min(24).optional(),
+  /** Integración de solo lectura con la herramienta de estatus de Optima (Supabase REST) */
+  OPTIMA_SUPABASE_URL: z.string().url().optional(),
+  OPTIMA_SUPABASE_KEY: z.string().min(20).optional(),
   MAX_UPLOAD_MB: z.coerce.number().default(15),
   RUN_SCHEDULER: z.enum(['true', 'false']).default('true'),
   SCHEDULER_TICK_SECONDS: z.coerce.number().default(60),
