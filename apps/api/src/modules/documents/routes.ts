@@ -14,8 +14,9 @@ import { env } from '../../config/env';
 /** Almacenamiento seguro: nombres aleatorios fuera del webroot, hash SHA-256, lista blanca de tipos, descarga autenticada y auditada. */
 export const documentsRouter = Router();
 const ALLOWED = new Set(['image/jpeg', 'image/png', 'image/webp', 'application/pdf']);
+const useDb = env.STORAGE_DRIVER === 'database';
 const storageRoot = path.resolve(env.STORAGE_DIR);
-fs.mkdirSync(storageRoot, { recursive: true });
+if (!useDb) fs.mkdirSync(storageRoot, { recursive: true });
 const upload = multer({
   storage: multer.memoryStorage(), limits: { fileSize: env.MAX_UPLOAD_MB * 1024 * 1024, files: 1 },
   fileFilter: (_req, file, cb) => (ALLOWED.has(file.mimetype) ? cb(null, true) : cb(badRequest('Tipo de archivo no permitido (JPG, PNG, WEBP o PDF)'))),
@@ -35,11 +36,23 @@ documentsRouter.post('/', requirePerm('documents.upload'), upload.single('file')
   if (!MAGIC[req.file.mimetype]?.(req.file.buffer)) throw badRequest('El contenido del archivo no coincide con su tipo');
   const sha256 = crypto.createHash('sha256').update(req.file.buffer).digest('hex');
   const storageKey = `${new Date().toISOString().slice(0, 7)}/${crypto.randomUUID()}`;
+  const data = { ...b, filename: path.basename(req.file.originalname).slice(0, 200), mimeType: req.file.mimetype, sizeBytes: req.file.size, sha256, storageKey, uploadedById: req.user!.id };
+  if (useDb) {
+    // Archivo y registro en una sola transacción: o se guardan ambos o ninguno
+    const file = req.file;
+    const d = await prisma.$transaction(async (tx) => {
+      const doc = await tx.document.create({ data });
+      await tx.documentBlob.create({ data: { documentId: doc.id, data: file.buffer } });
+      await audit(tx, { action: 'document.uploaded', entityType: b.entityType, entityId: b.entityId, after: { documentId: doc.id, title: b.title, sha256 }, req });
+      return doc;
+    });
+    return res.status(201).json(d);
+  }
   const full = path.join(storageRoot, storageKey);
   fs.mkdirSync(path.dirname(full), { recursive: true });
   fs.writeFileSync(full, req.file.buffer, { mode: 0o600 });
   try {
-    const d = await prisma.document.create({ data: { ...b, filename: path.basename(req.file.originalname).slice(0, 200), mimeType: req.file.mimetype, sizeBytes: req.file.size, sha256, storageKey, uploadedById: req.user!.id } });
+    const d = await prisma.document.create({ data });
     await audit(prisma, { action: 'document.uploaded', entityType: b.entityType, entityId: b.entityId, after: { documentId: d.id, title: b.title, sha256 }, req });
     res.status(201).json(d);
   } catch (e) {
@@ -57,13 +70,22 @@ documentsRouter.get('/:id/download', requirePerm('documents.view'), asyncH(async
   const id = parse(uuid, req.params.id);
   const d = await prisma.document.findUnique({ where: { id } });
   if (!d || d.deletedAt) throw notFound('Documento');
+  const headers = () => {
+    res.setHeader('Content-Type', d.mimeType);
+    res.setHeader('Content-Disposition', `inline; filename="${encodeURIComponent(d.filename)}"`);
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    res.setHeader('Cache-Control', 'private, no-store');
+  };
+  const blob = await prisma.documentBlob.findUnique({ where: { documentId: id } });
+  if (blob) {
+    await audit(prisma, { action: 'document.downloaded', entityType: 'Document', entityId: id, req });
+    headers();
+    return res.end(Buffer.from(blob.data));
+  }
   const full = path.join(storageRoot, d.storageKey);
   if (!full.startsWith(storageRoot) || !fs.existsSync(full)) throw notFound('Archivo');
   await audit(prisma, { action: 'document.downloaded', entityType: 'Document', entityId: id, req });
-  res.setHeader('Content-Type', d.mimeType);
-  res.setHeader('Content-Disposition', `inline; filename="${encodeURIComponent(d.filename)}"`);
-  res.setHeader('X-Content-Type-Options', 'nosniff');
-  res.setHeader('Cache-Control', 'private, no-store');
+  headers();
   fs.createReadStream(full).pipe(res);
 }));
 

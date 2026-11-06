@@ -1284,9 +1284,20 @@ model Document {
   uploadedAt  DateTime         @default(now()) @db.Timestamptz(6)
   deletedAt   DateTime?        @db.Timestamptz(6)
 
+  blob        DocumentBlob?
+
   @@index([entityType, entityId])
   @@index([expiresAt])
   @@map("documents")
+}
+
+/// Contenido del archivo cuando STORAGE_DRIVER=database (despliegues sin disco persistente)
+model DocumentBlob {
+  documentId String   @id @db.Uuid
+  document   Document @relation(fields: [documentId], references: [id], onDelete: Restrict)
+  data       Bytes
+
+  @@map("document_blobs")
 }
 
 model InsurancePolicy {

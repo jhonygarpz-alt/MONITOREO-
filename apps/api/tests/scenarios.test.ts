@@ -311,3 +311,26 @@ describe('Directorio de emergencias', () => {
     expect((await as(SUP).put(`/api/emergency-contacts/${c.body.id}`, { phone: '8000000001' })).body.status).toBe('SIN_VERIFICAR');
   });
 });
+
+describe('Despliegue sin disco y programador externo', () => {
+  it('guarda y descarga documentos dentro de PostgreSQL, sin poder alterarlos', async () => {
+    const { unit } = await makeUnit();
+    const pdf = Buffer.from('%PDF-1.4\n% prueba\n');
+    const token = await (await import('./helpers')).login(G1);
+    const up = await request(app).post('/api/documents').set('Authorization', `Bearer ${token}`)
+      .field('entityType', 'Unit').field('entityId', unit.id).field('category', 'POLIZA').field('title', 'Póliza prueba')
+      .attach('file', pdf, { filename: 'poliza.pdf', contentType: 'application/pdf' });
+    expect(up.status).toBe(201);
+    const dl = await request(app).get(`/api/documents/${up.body.id}/download`).set('Authorization', `Bearer ${token}`);
+    expect(dl.status).toBe(200);
+    expect(Buffer.from(dl.body ?? dl.text).toString().startsWith('%PDF')).toBe(true);
+    await expect(prisma.documentBlob.delete({ where: { documentId: up.body.id } })).rejects.toThrow();
+  });
+  it('el endpoint del programador externo exige el secreto', async () => {
+    expect((await request(app).post('/api/internal/tick')).status).toBe(401);
+    expect((await request(app).post('/api/internal/tick').set('x-cron-secret', 'incorrecto-incorrecto-incorrecto')).status).toBe(401);
+    const ok = await request(app).post('/api/internal/tick').set('x-cron-secret', 'test-cron-secret-0123456789abcdef');
+    expect(ok.status).toBe(200);
+    expect(ok.body.results['sweep.generate']).toBeDefined();
+  });
+});
