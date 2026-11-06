@@ -1,0 +1,27 @@
+# Despliegue en Render (https://render.com) conectado a la base de datos de Supabase.
+# Render lee este archivo con "New → Blueprint" y crea el servicio a partir del Dockerfile.
+services:
+  - type: web
+    name: centro-inteligente-monitoreo
+    runtime: docker
+    plan: starter            # plan de pago: no se duerme, así el motor de reglas corre 24/7
+    region: ohio             # cercano a Supabase us-east-1
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /api/health
+    disk:
+      name: documentos
+      mountPath: /data/storage
+      sizeGB: 5
+    envVars:
+      - key: DATABASE_URL          # Supabase → Connect → Session pooler (puerto 5432)
+        sync: false
+      - key: JWT_SECRET
+        generateValue: true
+      - key: COOKIE_SECURE
+        value: "true"
+      - key: RUN_SCHEDULER         # el motor de reglas corre dentro del mismo servicio
+        value: "true"
+      - key: CORS_ORIGIN           # cámbielo por la URL pública que asigne Render
+        value: https://centro-inteligente-monitoreo.onrender.com
+      - key: STORAGE_DIR
+        value: /data/storage
