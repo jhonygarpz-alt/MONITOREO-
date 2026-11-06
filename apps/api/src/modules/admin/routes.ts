@@ -144,6 +144,16 @@ adminRouter.put('/integrations/:key', requirePerm('admin.integrations'), asyncH(
   res.json(i);
 }));
 
+adminRouter.post('/integrations/optima/sync', requirePerm('admin.integrations'), asyncH(async (req, res) => {
+  const { fetchOptimaRows, syncOptima } = await import('../integrations/optima');
+  try {
+    res.json(await syncOptima(await fetchOptimaRows(), { id: req.user!.id, email: req.user!.email }));
+  } catch (e) {
+    await prisma.integration.updateMany({ where: { key: 'optima' }, data: { lastError: (e as Error).message.slice(0, 500) } });
+    throw unprocessable(`No se pudo sincronizar con Optima: ${(e as Error).message}`);
+  }
+}));
+
 // ---------------- Auditoría ----------------
 adminRouter.get('/audit', requirePerm('admin.audit'), asyncH(async (req, res) => {
   const { take, skip } = page(req.query);

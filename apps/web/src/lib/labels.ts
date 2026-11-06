@@ -9,7 +9,7 @@ const L: Record<string, string> = {
   NUEVA: 'Nueva', EN_ATENCION: 'En atención', ESCALADA: 'Escalada', CONVERTIDA_INCIDENCIA: 'Convertida en incidencia', DESCARTADA: 'Descartada', RESUELTA: 'Resuelta',
   ABIERTA: 'Abierta', CONTENIDA: 'Contenida', PENDIENTE_CIERRE: 'Pendiente de cierre', CERRADA: 'Cerrada',
   MONITORISTA: 'Monitorista', GERENCIA: 'Gerencia', OPERACIONES_ESTRATEGICAS: 'Operaciones Estratégicas',
-  TRACTOCAMION: 'Tractocamión', AUTOTANQUE: 'Autotanque', REMOLQUE: 'Remolque', TANQUE: 'Tanque', DOLLY: 'Dolly',
+  TRACTOCAMION: 'Tractocamión', AUTOTANQUE: 'Autotanque', REMOLQUE: 'Remolque', TANQUE: 'Tanque', DOLLY: 'Dolly', TORTON: 'Tortón', RABON: 'Rabón', CAMIONETA: 'Camioneta', PICKUP: 'Pickup', AUTOMOVIL: 'Automóvil',
   MANUAL: 'Captura manual', DEMO: 'Demostración', INTEGRATION: 'Integración',
   PROGRAMADO: 'Programado', EN_TRASLADO_A_CARGA: 'En traslado a carga', EN_CARGA: 'En carga', CARGADO: 'Cargado', EN_RESGUARDO: 'En resguardo', EN_DESCARGA: 'En descarga', DESCARGADO: 'Descargado', FINALIZADO: 'Finalizado', CON_INCIDENCIA: 'Con incidencia', CANCELADO: 'Cancelado',
   SOLICITADA: 'Solicitada', PRIMERA_AUTORIZACION: '1 de 2 autorizaciones', AUTORIZADA: 'Autorizada', RECHAZADA: 'Rechazada', EJECUCION_REGISTRADA: 'Ejecución registrada', RESTABLECIDA: 'Restablecida', CANCELADA: 'Cancelada',

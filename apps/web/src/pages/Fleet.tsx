@@ -9,7 +9,7 @@ import { FormModal } from '../components/forms';
 import { label, STOP_REASONS } from '../lib/labels';
 import { minutesLabel } from '../lib/format';
 
-interface FU { id: string; economicNumber: string; plates: string; type: string; opStatus: string; base: string | null; freshness: string; minutesSincePosition: number | null; dataSource: string; operator: { fullName: string } | null; position: { recordedAt: string; source: string; speedKph: number | null } | null; camerasWithFault: number; cameras: unknown[]; activeStop: { minutes: number; reason: string } | null; trailers: string[] }
+interface FU { id: string; economicNumber: string; plates: string; type: string; opStatus: string; base: string | null; freshness: string; minutesSincePosition: number | null; dataSource: string; operator: { fullName: string } | null; position: { recordedAt: string; source: string; speedKph: number | null } | null; camerasWithFault: number; cameras: unknown[]; activeStop: { minutes: number; reason: string } | null; trailers: string[]; external: { source: string; status: string | null; location: string | null; syncedAt: string | null } | null }
 
 export function FleetPage() {
   const { can } = useAuth();
@@ -40,6 +40,9 @@ export function FleetPage() {
                 <p className="flex items-center gap-1.5"><Video className="h-4 w-4 text-ink-400" />{u.cameras.length} cámaras{u.camerasWithFault > 0 && <Badge tone="amber">{u.camerasWithFault} con falla</Badge>}</p>
                 {u.activeStop && <p className="flex items-center gap-1.5 text-amber-700"><PauseCircle className="h-4 w-4" />Detenida {minutesLabel(u.activeStop.minutes)} · {STOP_REASONS[u.activeStop.reason]}</p>}
                 {u.trailers.length > 0 && <p className="text-xs text-ink-500">Acoplados: {u.trailers.join(', ')}</p>}
+                {u.external && (u.external.status || u.external.location) && (
+                  <p className="rounded-lg bg-sky-50 px-2 py-1 text-xs text-sky-900">Optima: <b>{u.external.status ?? '—'}</b>{u.external.location && ` · ${u.external.location}`}</p>
+                )}
               </div>
             </Link>
           ))}
@@ -50,7 +53,7 @@ export function FleetPage() {
         {(v, set) => <div className="grid gap-4 sm:grid-cols-2">
           <Field label="Número económico"><Input value={v.economicNumber} onChange={(e) => set({ economicNumber: e.target.value })} /></Field>
           <Field label="Placas"><Input value={v.plates} onChange={(e) => set({ plates: e.target.value })} /></Field>
-          <Field label="Tipo"><Select value={v.type} onChange={(e) => set({ type: e.target.value })} options={['TRACTOCAMION', 'AUTOTANQUE', 'REMOLQUE', 'TANQUE', 'DOLLY'].map((x) => ({ value: x, label: label(x) }))} /></Field>
+          <Field label="Tipo"><Select value={v.type} onChange={(e) => set({ type: e.target.value })} options={['TRACTOCAMION', 'AUTOTANQUE', 'REMOLQUE', 'TANQUE', 'DOLLY', 'TORTON', 'RABON', 'CAMIONETA', 'PICKUP', 'AUTOMOVIL'].map((x) => ({ value: x, label: label(x) }))} /></Field>
           <Field label="Base"><Select value={v.baseId} onChange={(e) => set({ baseId: e.target.value })} options={(bases.data ?? []).map((b) => ({ value: b.id, label: b.name }))} placeholder="Sin base" /></Field>
           <Field label="Marca"><Input value={v.brand} onChange={(e) => set({ brand: e.target.value })} /></Field>
           <Field label="Modelo"><Input value={v.model} onChange={(e) => set({ model: e.target.value })} /></Field>

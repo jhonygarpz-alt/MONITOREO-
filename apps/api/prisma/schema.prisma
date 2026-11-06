@@ -30,6 +30,11 @@ enum UnitType {
   REMOLQUE
   TANQUE
   DOLLY
+  TORTON
+  RABON
+  CAMIONETA
+  PICKUP
+  AUTOMOVIL
 }
 
 enum UnitOpStatus {
@@ -514,6 +519,14 @@ model Unit {
   notes           String?
   active          Boolean      @default(true)
   dataSource      DataSource   @default(MANUAL)
+  /// Sistema externo del que se sincroniza la unidad (p.ej. "optima") e identificador en ese sistema
+  externalSource  String?
+  externalId      String?
+  /// Último estatus, ubicación (texto) y observaciones reportados por el sistema externo, tal cual
+  externalStatus  String?
+  externalLocation String?
+  externalNotes   String?
+  externalSyncedAt DateTime?   @db.Timestamptz(6)
   createdAt       DateTime     @default(now()) @db.Timestamptz(6)
   updatedAt       DateTime     @updatedAt @db.Timestamptz(6)
 
@@ -533,6 +546,7 @@ model Unit {
   immobRequests    ImmobilizationRequest[]
   curfewExceptions CurfewException[]
 
+  @@unique([externalSource, externalId])
   @@index([opStatus])
   @@index([type])
   @@map("units")

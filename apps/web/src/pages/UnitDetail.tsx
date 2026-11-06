@@ -46,6 +46,12 @@ export function UnitDetailPage() {
           {can('incidents.manage') && <Link to={`/incidencias?nueva=1&unitId=${u.id}`}><Button variant="danger" icon={<AlertTriangle className="h-4 w-4" />}>Reportar incidencia</Button></Link>}
         </div>
       </div>
+      {u.externalSource && (
+        <div className="mb-5"><Notice tone="blue">
+          <b>Sincronizada desde Optima</b> ({fmtDateTime(u.externalSyncedAt)}): estatus <b>{u.externalStatus ?? '—'}</b>{u.externalLocation && <> · ubicación reportada: <b>{u.externalLocation}</b></>}{u.externalNotes && <> · {u.externalNotes}</>}.
+          <span className="block text-xs">La ubicación de Optima es texto capturado; no es una posición GPS.</span>
+        </Notice></div>
+      )}
       {u.expiring?.length > 0 && <div className="mb-5"><Notice tone="amber">{u.expiring.map((e: any) => `${e.kind} ${e.label}: ${e.expired ? 'VENCIDA' : 'vence'} ${fmtDate(e.expiresAt)}`).join(' · ')}</Notice></div>}
       <Tabs value={tab} onChange={setTab} tabs={[{ value: 'resumen', label: 'Resumen' }, { value: 'camaras', label: 'Cámaras y GPS', count: u.cameras.length }, { value: 'docs', label: 'Documentos y fotos', count: u.documents.length }, { value: 'polizas', label: 'Pólizas', count: u.policies.length }, { value: 'acoples', label: 'Remolques / tanques' }, { value: 'historial', label: 'Historial' }]} />
       {tab === 'resumen' && (

@@ -10,12 +10,18 @@ import { activeStopsEvaluated } from '../modules/operations/service';
 import { curfewStatus } from '../modules/route/service';
 import { escalate } from '../modules/incidents/escalation';
 import { computeKpis } from '../modules/reports/kpis';
+import { runOptimaIfEnabled } from '../modules/integrations/optima';
 
 const minuteBucket = (d: Date, min: number) => Math.floor(d.getTime() / (min * 60000));
 
 export interface JobDef { name: string; description: string; key: (now: Date) => string; run: (now: Date) => Promise<unknown> }
 
 export const JOBS: JobDef[] = [
+  {
+    name: 'optima.sync', description: 'Sincronizar unidades desde la herramienta de estatus de Optima (solo lectura)',
+    key: (now) => `optima.sync:${minuteBucket(now, 5)}`,
+    run: () => runOptimaIfEnabled(),
+  },
   {
     name: 'sweep.generate', description: '1. Generar barridos cada dos horas',
     key: (now) => `sweep.generate:${minuteBucket(now, 5)}`,

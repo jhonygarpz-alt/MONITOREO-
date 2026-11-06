@@ -334,3 +334,30 @@ describe('Despliegue sin disco y programador externo', () => {
     expect(ok.body.results['sweep.generate']).toBeDefined();
   });
 });
+
+describe('Integración Optima (solo lectura)', () => {
+  it('importa unidades, operadores, viajes y estatus sin inventar posiciones GPS, y es idempotente', async () => {
+    const { syncOptima } = await import('../src/modules/integrations/optima');
+    const rows = [
+      { id: 'opt-1', unidad: 'OPT-T01', tipoUnidad: 'TRACTOCAMION', placasTractor: 'OPT01A', sucursal: 'ARGO', operador: 'Operador Optima', status: 'En tránsito', enRuta: true, ubicacion: 'km 26', observaciones: 'sin novedad', cliente: 'Cliente Optima', origen: 'NUEVO LAREDO', destino: 'MONTERREY', contenedor: 'OPT-TQ1' },
+      { id: 'opt-2', unidad: 'OPT-TQ1', tipoUnidad: 'TANQUE', placasTractor: '', sucursal: 'ARGO', status: 'En tránsito', enRuta: true },
+      { id: 'opt-3', unidad: 'OPT-T02', tipoUnidad: 'TRACTOCAMION', placasTractor: 'OPT02A', sucursal: 'ARGO', status: 'REVISAR GPS', enRuta: false, contenedor: 'OPT-TQ1' },
+    ];
+    const a = await syncOptima(rows);
+    expect(a.created).toBe(3);
+    expect(a.trips).toBe(1);
+    expect(a.alerts).toBe(1);
+    expect(a.conflicts.length).toBe(1);
+    const t01 = await prisma.unit.findUniqueOrThrow({ where: { economicNumber: 'OPT-T01' } });
+    expect(t01.opStatus).toBe('EN_TRANSITO');
+    expect(t01.externalLocation).toBe('km 26');
+    expect(await prisma.gpsPosition.count({ where: { unitId: t01.id } })).toBe(0);
+    expect((await prisma.unit.findUniqueOrThrow({ where: { economicNumber: 'OPT-TQ1' } })).plates).toMatch(/^S\/P-/);
+    const b = await syncOptima(rows);
+    expect(b.created + b.updated + b.couplings + b.trips + b.alerts).toBe(0);
+    // Una detención registrada por el monitorista no se sobrescribe con el estatus de Optima
+    await as(M1).post('/api/ops/stops', { unitId: t01.id, reason: 'DESCANSO_OBLIGATORIO' });
+    await syncOptima(rows);
+    expect((await prisma.unit.findUniqueOrThrow({ where: { id: t01.id } })).opStatus).toBe('DETENIDA');
+  });
+});

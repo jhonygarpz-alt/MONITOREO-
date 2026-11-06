@@ -42,6 +42,7 @@ async function main() {
     { key: 'cameras', name: 'Plataforma de videovigilancia (DVR/MDVR)', kind: 'CAMERAS', notes: 'Pendiente: integración de estado de canales.' },
     { key: 'immobilizer', name: 'Comandos de inmovilización', kind: 'IMMOBILIZER', notes: 'NO HABILITAR sin validar fabricante, compatibilidad, procedimiento legal y seguridad. Solo bloqueo de siguiente arranque con unidad detenida.' },
     { key: 'traffic', name: 'Sistemas de tráfico', kind: 'TRAFFIC', notes: 'Futuro.' },
+    { key: 'optima', name: 'Optima Dual Solutions — Actualización de Estatus', kind: 'FLEET', notes: 'Sincronización de solo lectura de unidades, operadores, estatus, ubicación (texto) y viajes desde flota_estatus.' },
     { key: 'whatsapp', name: 'WhatsApp Business API', kind: 'MESSAGING', notes: 'Actualmente se comparte mediante enlace wa.me desde el dispositivo del usuario.' },
   ];
   for (const i of integrations) await prisma.integration.upsert({ where: { key: i.key }, update: {}, create: { ...i, enabled: false, validated: false } });
