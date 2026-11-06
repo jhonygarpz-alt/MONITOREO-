@@ -84,7 +84,7 @@ export async function syncOptima(rows: OptimaRow[], actor?: { id: string; email:
   const byEco = new Map(units.map((u) => [norm(u.economicNumber), u]));
   const plateOwner = new Map(units.map((u) => [norm(u.plates), u.id]));
   const baseByCode = new Map(bases.map((b) => [norm(b.code), b]));
-  const opByName = new Map(operators.map((o) => [norm(o.fullName), o]));
+  const opByName = new Map(operators.flatMap((o) => [norm(o.fullName), ...(o.aliases ?? []).map(norm)].map((k) => [k, o] as const)));
   const clientByName = new Map(clients.map((c) => [norm(c.name), c]));
 
   const ensureBase = async (sucursal: string) => {
